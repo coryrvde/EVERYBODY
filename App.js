@@ -14,6 +14,7 @@ import LoginScreen from './app/screens/LoginScreen';
 import SignUpScreen from './app/screens/SignUpScreen';
 import Details from './app/screens/Details';
 import HomeScreen from './app/screens/HomeScreen';
+import ChildProfile from './app/screens/ChildProfile';
 
 
 const Stack = createNativeStackNavigator();
@@ -61,6 +62,7 @@ function RootStack(){
     <Stack.Screen name="Login" component={LoginScreen}/>
     <Stack.Screen name="SignUp" component={SignUpScreen}/>
     <Stack.Screen name="Details" component={Details}/>
+    <Stack.Screen name="Child Profiles" component={ChildProfile}/>
   </Stack.Navigator>
   );
 }

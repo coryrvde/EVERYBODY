@@ -51,43 +51,47 @@ backend/
 ## 🚀 Edge Functions
 
 ### Process Alert (`/process-alert`)
+
 - AI-powered alert analysis
 - Severity determination
 - Automated notifications
 - Insight generation
 
 **Usage:**
+
 ```javascript
-const { data } = await supabase.functions.invoke('process-alert', {
+const { data } = await supabase.functions.invoke("process-alert", {
   body: {
     alertData: {
-      userId: 'user-uuid',
-      alertType: 'intrusion',
-      title: 'Motion detected',
-      location: { lat: 40.7128, lng: -74.0060 }
-    }
-  }
-})
+      userId: "user-uuid",
+      alertType: "intrusion",
+      title: "Motion detected",
+      location: { lat: 40.7128, lng: -74.006 },
+    },
+  },
+});
 ```
 
 ### Emergency Response (`/emergency-response`)
+
 - Emergency protocol activation
 - Contact notification system
 - Authority coordination
 - Response tracking
 
 **Usage:**
+
 ```javascript
-const { data } = await supabase.functions.invoke('emergency-response', {
+const { data } = await supabase.functions.invoke("emergency-response", {
   body: {
     emergencyData: {
-      userId: 'user-uuid',
-      emergencyType: 'medical_emergency',
-      severity: 'critical',
-      location: { lat: 40.7128, lng: -74.0060, address: '123 Main St' }
-    }
-  }
-})
+      userId: "user-uuid",
+      emergencyType: "medical_emergency",
+      severity: "critical",
+      location: { lat: 40.7128, lng: -74.006, address: "123 Main St" },
+    },
+  },
+});
 ```
 
 ## 📱 API Integration
@@ -95,22 +99,22 @@ const { data } = await supabase.functions.invoke('emergency-response', {
 Import the API functions in your React Native app:
 
 ```javascript
-import { guardianAPI } from './backend/api/guardian-api'
+import { guardianAPI } from "./backend/api/guardian-api";
 
 // Get user alerts
-const alerts = await guardianAPI.alerts.getAlerts({ status: 'active' })
+const alerts = await guardianAPI.alerts.getAlerts({ status: "active" });
 
 // Create new alert
 const alert = await guardianAPI.alerts.createAlert({
-  alert_type: 'suspicious_activity',
-  title: 'Unusual activity detected',
-  severity: 'medium'
-})
+  alert_type: "suspicious_activity",
+  title: "Unusual activity detected",
+  severity: "medium",
+});
 
 // Real-time subscriptions
 const subscription = guardianAPI.realtime.subscribeToAlerts((payload) => {
-  console.log('New alert:', payload.new)
-})
+  console.log("New alert:", payload.new);
+});
 ```
 
 ## 🔧 Setup Instructions
@@ -146,11 +150,11 @@ SUPABASE_ANON_KEY=your-anon-key
 Import and use the API in your React Native app:
 
 ```javascript
-import { guardianAPI } from './backend/api/guardian-api'
+import { guardianAPI } from "./backend/api/guardian-api";
 
 // Use throughout your app
-const user = await guardianAPI.auth.getCurrentUser()
-const alerts = await guardianAPI.alerts.getAlerts()
+const user = await guardianAPI.auth.getCurrentUser();
+const alerts = await guardianAPI.alerts.getAlerts();
 ```
 
 ## 🔐 Security Considerations
@@ -174,19 +178,19 @@ const alerts = await guardianAPI.alerts.getAlerts()
 ```javascript
 // Subscribe to new alerts
 const alertSub = guardianAPI.realtime.subscribeToAlerts((payload) => {
-  if (payload.eventType === 'INSERT') {
-    showNotification(payload.new)
+  if (payload.eventType === "INSERT") {
+    showNotification(payload.new);
   }
-})
+});
 
 // Subscribe to AI insights
 const insightSub = guardianAPI.realtime.subscribeToInsights((payload) => {
-  updateInsightsList(payload.new)
-})
+  updateInsightsList(payload.new);
+});
 
 // Cleanup subscriptions
-alertSub.unsubscribe()
-insightSub.unsubscribe()
+alertSub.unsubscribe();
+insightSub.unsubscribe();
 ```
 
 ## 🧪 Testing
@@ -203,20 +207,20 @@ insightSub.unsubscribe()
 
 ```javascript
 // Test authentication
-await guardianAPI.auth.getCurrentUser()
+await guardianAPI.auth.getCurrentUser();
 
 // Test alert creation
 await guardianAPI.alerts.createAlert({
-  alert_type: 'test',
-  title: 'Test Alert',
-  severity: 'low'
-})
+  alert_type: "test",
+  title: "Test Alert",
+  severity: "low",
+});
 
 // Test emergency response
 await guardianAPI.emergency.triggerEmergency({
-  emergencyType: 'test_emergency',
-  severity: 'medium'
-})
+  emergencyType: "test_emergency",
+  severity: "medium",
+});
 ```
 
 ## 🚨 Emergency Response Flow

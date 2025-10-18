@@ -9,7 +9,7 @@ const OnboardingScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>Dielytic</Text>
+      <Text style={styles.headerText}>GUARDIAN AI</Text>
       <View style={styles.image}></View>
       <View style={styles.textContainer}>
         <Text style={styles.subTitle}>Guarding the Mind.</Text>
