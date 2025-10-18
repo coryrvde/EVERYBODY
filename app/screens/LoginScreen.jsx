@@ -68,9 +68,11 @@ export default function LoginScreen() {
         <Text style={styles.title}>Login</Text>
 
         <View style={styles.logoContainer}>
-          <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>Insert App Logo</Text>
-          </View>
+          <Image
+            source={require('../../assets/app-logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.form}>
@@ -149,18 +151,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 50,
   },
-  logoPlaceholder: {
+  logo: {
     width: 200,
     height: 200,
-    borderRadius: 100,
-    backgroundColor: '#1A1A1A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '500',
+    borderRadius: 20,
   },
   form: {
     marginBottom: 30,
