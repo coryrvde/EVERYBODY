@@ -11,7 +11,7 @@ const OnboardingScreen = () => {
     <View style={styles.container}>
       <Text style={styles.headerText}>GUARDIAN AI</Text>
       <Image
-        source={require('../../assets/logo2.jpg')}
+        source={require('../../assets/logo3.png')}
         style={styles.image}
         resizeMode="contain"
       />
