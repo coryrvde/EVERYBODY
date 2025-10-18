@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native'
 import React from 'react'
 // import Button from '../../components/Button/Button'
 import { useNavigation } from '@react-navigation/native'; // nec for navigation
@@ -10,7 +10,11 @@ const OnboardingScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.headerText}>GUARDIAN AI</Text>
-      <View style={styles.image}></View>
+      <Image
+        source={require('../../assets/logo2.jpg')}
+        style={styles.image}
+        resizeMode="contain"
+      />
       <View style={styles.textContainer}>
         <Text style={styles.subTitle}>Guarding the Mind.</Text>
         <Text style={styles.subTitle}>Protecting Our Children</Text>
@@ -42,7 +46,6 @@ headerText: {
 image: {
   width: 200,
   height: 200,
-  backgroundColor: '#ccc',
   margin: 20
 },
 textContainer: {
