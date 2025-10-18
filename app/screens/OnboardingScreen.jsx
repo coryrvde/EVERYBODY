@@ -13,7 +13,7 @@ const OnboardingScreen = () => {
       <View style={styles.image}></View>
       <View style={styles.textContainer}>
         <Text style={styles.subTitle}>Guarding the Mind.</Text>
-        <Text style={styles.subTitle}>Protecting the Conversation</Text>
+        <Text style={styles.subTitle}>Protecting Our Children</Text>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
