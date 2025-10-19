@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Email Verified</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:#0b1220; color:#e5e7eb; margin:0; }
+      .wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+      .card { background:#111827; border:1px solid #1f2937; border-radius:16px; padding:32px; max-width:560px; width:100%; text-align:center; }
+      h1 { margin:0 0 8px; font-size:28px; }
+      p { color:#9ca3af; margin:0 0 20px; }
+      .btn { display:inline-block; padding:12px 18px; border-radius:10px; text-decoration:none; font-weight:600; }
+      .primary { background:#2563eb; color:#fff; }
+      .ghost { color:#93c5fd; }
+      .hint { font-size:12px; color:#6b7280; margin-top:12px; }
+    </style>
+    <script>
+      // Attempt to deep link into the app after Supabase has already verified the email
+      document.addEventListener('DOMContentLoaded', function () {
+        var schemeUrl = 'guardianai://auth-callback';
+        var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+          setTimeout(function(){ window.location.href = schemeUrl; }, 800);
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>Email verified 🎉</h1>
+        <p>Your email has been successfully confirmed. You can now open the app and sign in.</p>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <a class="btn primary" href="guardianai://auth-callback">Open Guardian AI</a>
+          <a class="btn ghost" href="/">Return to site</a>
+        </div>
+        <div class="hint">If nothing happens on mobile, tap "Open Guardian AI" above.</div>
+      </div>
+    </div>
+  </body>
+  </html>
+
+

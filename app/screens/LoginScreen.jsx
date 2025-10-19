@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
@@ -35,20 +35,7 @@ export default function LoginScreen() {
         await supabase.auth.setSession(session);
       }
 
-      // Check if user has a role set
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profileError || !profile?.role) {
-        // User doesn't have a role set, go to role selection
-        navigation.navigate('Role Selection');
-      } else {
-        // User has a role, go to main app
-        navigation.navigate('Main');
-      }
+      navigation.navigate('Main');
     } catch (e) {
       console.error('Unexpected login error:', e);
     }
@@ -57,6 +44,24 @@ export default function LoginScreen() {
   const handleRecoverPassword = () => {
     console.log('Recover password for:', email);
     alert('Password recovery link sent to your email.');
+  };
+
+  const handleResendConfirmation = async () => {
+    try {
+      if (!email) {
+        Alert.alert('Enter email', 'Please enter your email first.');
+        return;
+      }
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) {
+        Alert.alert('Resend failed', error.message);
+        return;
+      }
+      Alert.alert('Email sent', 'Check your inbox for the verification link.');
+    } catch (e) {
+      Alert.alert('Error', 'Could not resend verification email.');
+      console.error('Resend verification error:', e);
+    }
   };
 
   return (
@@ -121,6 +126,10 @@ export default function LoginScreen() {
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={handleResendConfirmation}>
+          <Text style={styles.secondaryButtonText}>Resend confirmation email</Text>
         </TouchableOpacity>
 
         <Text style={styles.footer}>Welcome to your safe space</Text>
@@ -240,6 +249,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  secondaryButtonText: {
+    color: '#2B6CB0',
+    fontSize: 16,
     fontWeight: '600',
   },
   footer: {

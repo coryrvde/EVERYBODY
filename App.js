@@ -7,6 +7,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
+import * as Linking from 'expo-linking';
 import { supabase } from './app/supabase';
 
 import OnboardingScreen from './app/screens/OnboardingScreen';
@@ -73,8 +74,9 @@ function RootStack(){
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>
     <Stack.Screen name="Onboarding" component={OnboardingScreen}/>
+    {/* Handle deep link path auth-callback by mapping to Login */}
+    <Stack.Screen name="Login" component={LoginScreen} options={{ path: 'auth-callback' }}/>
     <Stack.Screen name="Main" component={MyTabs}/>
-    <Stack.Screen name="Login" component={LoginScreen}/>
     <Stack.Screen name="SignUp" component={SignUpScreen}/>
     <Stack.Screen name="Details" component={Details}/>
     <Stack.Screen name="Child Profiles" component={ChildProfileScreen}/>
@@ -91,8 +93,21 @@ function RootStack(){
 }
 
 export default function App() {
+  const linking = {
+    prefixes: [Linking.createURL('/')],
+    config: {
+      screens: {
+        Onboarding: 'onboarding',
+        Login: {
+          path: 'auth-callback',
+        },
+        SignUp: 'signup',
+        Main: 'main',
+      },
+    },
+  };
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <RootStack />
     </NavigationContainer>
   );

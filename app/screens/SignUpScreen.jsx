@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Alert } from 'react-native';
+import * as Linking from 'expo-linking';
+import { EMAIL_REDIRECT_URL } from '../config/links';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../supabase';
 import { useNavigation } from '@react-navigation/native';
@@ -30,10 +32,15 @@ export default function SignUpScreen() {
     }
 
     try {
+      const redirectTo = EMAIL_REDIRECT_URL && EMAIL_REDIRECT_URL.length > 0
+        ? EMAIL_REDIRECT_URL
+        : Linking.createURL('auth-callback');
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
         options: {
+          emailRedirectTo: redirectTo,
+          // If email confirmations are enabled in Supabase, there will be no session here
           data: {
             full_name: fullName,
           }
@@ -46,23 +53,8 @@ export default function SignUpScreen() {
       }
 
       if (data.user) {
-        if (data.user.email_confirmed_at) {
-          // Email already confirmed, go to role selection
-          Alert.alert('Success', 'Account created! Choose your role to continue.');
-          navigation.navigate('Role Selection');
-        } else {
-          // Email needs verification
-          Alert.alert(
-            'Check Your Email', 
-            'We sent you a verification link. Please check your email and click the link to verify your account, then come back to sign in.',
-            [
-              {
-                text: 'OK',
-                onPress: () => navigation.navigate('Login')
-              }
-            ]
-          );
-        }
+        Alert.alert('Success', 'Account created! Choose your role to continue.');
+        navigation.navigate('Role Selection');
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
