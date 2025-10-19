@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Alert } from 'react-native';
+import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../supabase';
 import { useNavigation } from '@react-navigation/native';
@@ -30,10 +31,13 @@ export default function SignUpScreen() {
     }
 
     try {
+      const redirectTo = Linking.createURL('auth-callback');
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
         options: {
+          emailRedirectTo: redirectTo,
+          // If email confirmations are enabled in Supabase, there will be no session here
           data: {
             full_name: fullName,
           }
@@ -45,9 +49,20 @@ export default function SignUpScreen() {
         return;
       }
 
-      if (data.user) {
+      // When email confirmation is ON, data.user exists but data.session is null
+      if (data?.session) {
         Alert.alert('Success', 'Account created! Choose your role to continue.');
         navigation.navigate('Role Selection');
+        return;
+      }
+
+      if (data?.user && !data?.session) {
+        Alert.alert(
+          'Confirm your email',
+          'We sent you a verification link. Please confirm your email, then log in.'
+        );
+        navigation.navigate('Login');
+        return;
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
