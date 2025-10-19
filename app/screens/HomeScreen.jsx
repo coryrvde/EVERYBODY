@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Alert, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
+import { guardianAPI } from '../backend/api/guardian-api';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('HOME');
-  const [alertCount] = useState(10);
+  const [alerts, setAlerts] = useState([]);
+  const [guardianId, setGuardianId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Sample data for the chart
   const chartData = [
@@ -21,6 +24,67 @@ export default function HomeScreen() {
   ];
 
   const maxValue = Math.max(...chartData.map(d => d.value));
+
+  // Load guardian ID and alerts on component mount
+  useEffect(() => {
+    initializeData();
+  }, []);
+
+  // Set up real-time alerts subscription
+  useEffect(() => {
+    if (guardianId) {
+      setupRealtimeAlerts();
+    }
+  }, [guardianId]);
+
+  async function initializeData() {
+    try {
+      // Get current user to find guardian ID
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+
+      if (user) {
+        // For now, we'll use the user ID as guardian ID
+        // In a real app, you'd have a mapping table
+        setGuardianId(user.id);
+        await loadAlerts(user.id);
+      }
+    } catch (error) {
+      console.error('Error initializing data:', error);
+      Alert.alert('Error', 'Failed to load user data');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadAlerts(guardian_id) {
+    try {
+      const alertsData = await guardianAPI.alerts.getRecentAlerts(guardian_id);
+      setAlerts(alertsData);
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+    }
+  }
+
+  function setupRealtimeAlerts() {
+    const channel = supabase
+      .channel('realtime-alerts')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'recent_alerts',
+        filter: `guardian_id=eq.${guardianId}`
+      }, (payload) => {
+        console.log('New alert received:', payload.new);
+        setAlerts(prev => [payload.new, ...prev.slice(0, 49)]); // Keep last 50 alerts
+        // Could trigger local notification here
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }
 
   const handleNavigation = (tab) => {
     setActiveTab(tab);
@@ -131,6 +195,57 @@ export default function HomeScreen() {
             >
               <Text style={styles.gridButtonText}>Recent Alerts</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Recent Alerts Section */}
+          <View style={styles.alertsSection}>
+            <View style={styles.alertsHeader}>
+              <Text style={styles.alertsTitle}>Recent Alerts</Text>
+              <Text style={styles.alertsCount}>({alerts.length})</Text>
+            </View>
+
+            {alerts.length > 0 ? (
+              <FlatList
+                data={alerts.slice(0, 5)} // Show only first 5 alerts
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.alertItem}>
+                    <View style={styles.alertIcon}>
+                      <Text style={styles.alertIconText}>
+                        {item.alert_type === 'emergency' ? '🚨' :
+                         item.alert_type === 'security' ? '🔒' :
+                         item.alert_type === 'activity' ? '📱' : '📢'}
+                      </Text>
+                    </View>
+                    <View style={styles.alertContent}>
+                      <Text style={styles.alertMessage} numberOfLines={2}>
+                        {item.message}
+                      </Text>
+                      <Text style={styles.alertTime}>
+                        {new Date(item.created_at).toLocaleString()}
+                      </Text>
+                    </View>
+                    {item.severity === 'high' || item.severity === 'critical' ? (
+                      <View style={[
+                        styles.severityBadge,
+                        { backgroundColor: item.severity === 'critical' ? '#F44336' : '#FF9800' }
+                      ]}>
+                        <Text style={styles.severityText}>
+                          {item.severity.toUpperCase()}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={false}
+                style={styles.alertsList}
+              />
+            ) : (
+              <View style={styles.noAlertsContainer}>
+                <Text style={styles.noAlertsText}>No recent alerts</Text>
+                <Text style={styles.noAlertsSubtext}>Alerts will appear here when detected</Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -335,5 +450,104 @@ const styles = StyleSheet.create({
   },
   navLabelActive: {
     color: '#000000',
+  },
+  alertsSection: {
+    marginTop: 30,
+    marginBottom: 20,
+  },
+  alertsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  alertsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  alertsCount: {
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  alertsList: {
+    maxHeight: 300,
+  },
+  alertItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  alertIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  alertIconText: {
+    fontSize: 18,
+  },
+  alertContent: {
+    flex: 1,
+  },
+  alertMessage: {
+    fontSize: 16,
+    color: '#333333',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  alertTime: {
+    fontSize: 12,
+    color: '#666666',
+  },
+  severityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  severityText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  noAlertsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  noAlertsText: {
+    fontSize: 18,
+    color: '#333333',
+    fontWeight: '500',
+    marginBottom: 5,
+  },
+  noAlertsSubtext: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
   },
 });

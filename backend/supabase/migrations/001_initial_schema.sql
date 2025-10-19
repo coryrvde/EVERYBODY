@@ -112,6 +112,61 @@ CREATE TABLE public.system_settings (
     UNIQUE(user_id, setting_key)
 );
 
+-- Guardians table (stores user accounts)
+CREATE TABLE public.guardians (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    expo_push_token TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Child profiles
+CREATE TABLE public.child_profiles (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    guardian_id UUID REFERENCES public.guardians(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    age INTEGER,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Quick actions (e.g. "lock device", "track location")
+CREATE TABLE public.quick_actions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    guardian_id UUID REFERENCES public.guardians(id) ON DELETE CASCADE,
+    child_id UUID REFERENCES public.child_profiles(id) ON DELETE CASCADE,
+    action_name TEXT NOT NULL,
+    executed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    executed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Summary (daily activity summary or analytics)
+CREATE TABLE public.summary (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    child_id UUID REFERENCES public.child_profiles(id) ON DELETE CASCADE,
+    total_screen_time INTEGER DEFAULT 0,
+    total_alerts INTEGER DEFAULT 0,
+    date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    UNIQUE(child_id, date)
+);
+
+-- Recent alerts (used for notifications)
+CREATE TABLE public.recent_alerts (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    guardian_id UUID REFERENCES public.guardians(id) ON DELETE CASCADE,
+    child_id UUID REFERENCES public.child_profiles(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    alert_type TEXT DEFAULT 'general' CHECK (alert_type IN ('general', 'security', 'activity', 'emergency')),
+    severity TEXT DEFAULT 'low' CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_security_alerts_user_id ON public.security_alerts(user_id);
 CREATE INDEX idx_security_alerts_status ON public.security_alerts(status);
@@ -121,6 +176,20 @@ CREATE INDEX idx_activity_logs_created_at ON public.activity_logs(created_at DES
 CREATE INDEX idx_ai_insights_user_id ON public.ai_insights(user_id);
 CREATE INDEX idx_devices_user_id ON public.devices(user_id);
 CREATE INDEX idx_emergency_contacts_user_id ON public.emergency_contacts(user_id);
+
+-- Indexes for new tables
+CREATE INDEX idx_guardians_email ON public.guardians(email);
+CREATE INDEX idx_child_profiles_guardian_id ON public.child_profiles(guardian_id);
+CREATE INDEX idx_child_profiles_status ON public.child_profiles(status);
+CREATE INDEX idx_quick_actions_guardian_id ON public.quick_actions(guardian_id);
+CREATE INDEX idx_quick_actions_child_id ON public.quick_actions(child_id);
+CREATE INDEX idx_quick_actions_executed ON public.quick_actions(executed);
+CREATE INDEX idx_summary_child_id ON public.summary(child_id);
+CREATE INDEX idx_summary_date ON public.summary(date);
+CREATE INDEX idx_recent_alerts_guardian_id ON public.recent_alerts(guardian_id);
+CREATE INDEX idx_recent_alerts_child_id ON public.recent_alerts(child_id);
+CREATE INDEX idx_recent_alerts_read ON public.recent_alerts(read);
+CREATE INDEX idx_recent_alerts_created_at ON public.recent_alerts(created_at DESC);
 
 -- Row Level Security Policies
 
@@ -161,6 +230,43 @@ CREATE POLICY "Users can manage own contacts" ON public.emergency_contacts FOR A
 -- System settings policies
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage own settings" ON public.system_settings FOR ALL USING (auth.uid() = user_id);
+
+-- New tables RLS policies
+-- Guardians policies (using auth.users)
+ALTER TABLE public.guardians ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own guardian profile" ON public.guardians FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own guardian profile" ON public.guardians FOR UPDATE USING (auth.uid() = id);
+
+-- Child profiles policies
+ALTER TABLE public.child_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Guardians can manage their child profiles" ON public.child_profiles FOR ALL USING (auth.uid() = guardian_id);
+
+-- Quick actions policies
+ALTER TABLE public.quick_actions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Guardians can manage their quick actions" ON public.quick_actions FOR ALL USING (auth.uid() = guardian_id);
+
+-- Summary policies
+ALTER TABLE public.summary ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Guardians can view summaries for their children" ON public.summary FOR SELECT USING (
+    EXISTS (
+        SELECT 1 FROM public.child_profiles
+        WHERE child_profiles.id = summary.child_id
+        AND child_profiles.guardian_id = auth.uid()
+    )
+);
+CREATE POLICY "Guardians can update summaries for their children" ON public.summary FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM public.child_profiles
+        WHERE child_profiles.id = summary.child_id
+        AND child_profiles.guardian_id = auth.uid()
+    )
+);
+
+-- Recent alerts policies
+ALTER TABLE public.recent_alerts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Guardians can view their alerts" ON public.recent_alerts FOR SELECT USING (auth.uid() = guardian_id);
+CREATE POLICY "Guardians can update their alerts" ON public.recent_alerts FOR UPDATE USING (auth.uid() = guardian_id);
+CREATE POLICY "System can create alerts" ON public.recent_alerts FOR INSERT WITH CHECK (true);
 
 -- Functions
 

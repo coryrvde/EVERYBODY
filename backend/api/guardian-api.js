@@ -925,6 +925,470 @@ export const notificationsAPI = {
 }
 
 // ===========================
+// CHILD PROFILES FUNCTIONS
+// ===========================
+
+export const childProfilesAPI = {
+  // Create a new child profile
+  async createChildProfile(guardianId, name, age) {
+    try {
+      const { data, error } = await supabase
+        .from('child_profiles')
+        .insert([{
+          guardian_id: guardianId,
+          name: name,
+          age: age,
+          status: 'active'
+        }])
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Log the creation
+      await activityAPI.logActivity(
+        'profile_created',
+        `Child profile created: ${name}`,
+        { child_id: data.id, child_name: name }
+      );
+
+      return data;
+    } catch (error) {
+      console.error('Error creating child profile:', error);
+      throw error;
+    }
+  },
+
+  // Get all child profiles for a guardian
+  async getChildProfiles(guardianId) {
+    try {
+      const { data, error } = await supabase
+        .from('child_profiles')
+        .select('*')
+        .eq('guardian_id', guardianId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting child profiles:', error);
+      throw error;
+    }
+  },
+
+  // Get a specific child profile
+  async getChildProfile(childId) {
+    try {
+      const { data, error } = await supabase
+        .from('child_profiles')
+        .select('*')
+        .eq('id', childId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting child profile:', error);
+      throw error;
+    }
+  },
+
+  // Update a child profile
+  async updateChildProfile(childId, updates) {
+    try {
+      const { data, error } = await supabase
+        .from('child_profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', childId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Log the update
+      await activityAPI.logActivity(
+        'profile_updated',
+        `Child profile updated: ${data.name}`,
+        { child_id: data.id, updates: Object.keys(updates) }
+      );
+
+      return data;
+    } catch (error) {
+      console.error('Error updating child profile:', error);
+      throw error;
+    }
+  },
+
+  // Delete (deactivate) a child profile
+  async deleteChildProfile(childId) {
+    try {
+      const { data, error } = await supabase
+        .from('child_profiles')
+        .update({
+          status: 'inactive',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', childId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Log the deletion
+      await activityAPI.logActivity(
+        'profile_deleted',
+        `Child profile deactivated: ${data.name}`,
+        { child_id: data.id, child_name: data.name }
+      );
+
+      return data;
+    } catch (error) {
+      console.error('Error deleting child profile:', error);
+      throw error;
+    }
+  }
+};
+
+// ===========================
+// QUICK ACTIONS FUNCTIONS
+// ===========================
+
+export const quickActionsAPI = {
+  // Add a new quick action
+  async addQuickAction(guardianId, childId, actionName) {
+    try {
+      const { data, error } = await supabase
+        .from('quick_actions')
+        .insert([{
+          guardian_id: guardianId,
+          child_id: childId,
+          action_name: actionName,
+          executed: false
+        }])
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Log the action creation
+      await activityAPI.logActivity(
+        'action_created',
+        `Quick action created: ${actionName}`,
+        { action_id: data.id, child_id: childId, action_name: actionName }
+      );
+
+      return data;
+    } catch (error) {
+      console.error('Error adding quick action:', error);
+      throw error;
+    }
+  },
+
+  // Get all quick actions for a guardian
+  async getQuickActions(guardianId) {
+    try {
+      const { data, error } = await supabase
+        .from('quick_actions')
+        .select(`
+          *,
+          child_profiles (
+            name,
+            age
+          )
+        `)
+        .eq('guardian_id', guardianId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting quick actions:', error);
+      throw error;
+    }
+  },
+
+  // Mark an action as executed
+  async markActionExecuted(actionId) {
+    try {
+      const { data, error } = await supabase
+        .from('quick_actions')
+        .update({
+          executed: true,
+          executed_at: new Date().toISOString()
+        })
+        .eq('id', actionId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Log the execution
+      await activityAPI.logActivity(
+        'action_executed',
+        `Quick action executed: ${data.action_name}`,
+        { action_id: data.id, child_id: data.child_id, action_name: data.action_name }
+      );
+
+      return data;
+    } catch (error) {
+      console.error('Error marking action as executed:', error);
+      throw error;
+    }
+  },
+
+  // Delete a quick action
+  async deleteQuickAction(actionId) {
+    try {
+      const { error } = await supabase
+        .from('quick_actions')
+        .delete()
+        .eq('id', actionId);
+
+      if (error) throw error;
+
+      // Log the deletion
+      await activityAPI.logActivity(
+        'action_deleted',
+        'Quick action deleted',
+        { action_id: actionId }
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting quick action:', error);
+      throw error;
+    }
+  }
+};
+
+// ===========================
+// SUMMARY FUNCTIONS
+// ===========================
+
+export const summaryAPI = {
+  // Get summary data for a child (last 7 days)
+  async getSummary(childId) {
+    try {
+      const { data, error } = await supabase
+        .from('summary')
+        .select('*')
+        .eq('child_id', childId)
+        .order('date', { ascending: false })
+        .limit(7);
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting summary:', error);
+      throw error;
+    }
+  },
+
+  // Update or create summary for a child
+  async updateSummary(childId, screenTime, alerts) {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      const { data, error } = await supabase
+        .from('summary')
+        .upsert({
+          child_id: childId,
+          total_screen_time: screenTime,
+          total_alerts: alerts,
+          date: today
+        }, {
+          onConflict: 'child_id,date'
+        })
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating summary:', error);
+      throw error;
+    }
+  },
+
+  // Get weekly summary for all children of a guardian
+  async getWeeklySummary(guardianId) {
+    try {
+      const { data, error } = await supabase
+        .from('summary')
+        .select(`
+          *,
+          child_profiles (
+            name,
+            age
+          )
+        `)
+        .eq('child_profiles.guardian_id', guardianId)
+        .order('date', { ascending: false })
+        .limit(21); // 3 weeks * 7 days
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting weekly summary:', error);
+      throw error;
+    }
+  }
+};
+
+// ===========================
+// ALERTS FUNCTIONS
+// ===========================
+
+export const alertsAPI = {
+  // Get recent alerts for a guardian
+  async getRecentAlerts(guardianId) {
+    try {
+      const { data, error } = await supabase
+        .from('recent_alerts')
+        .select(`
+          *,
+          child_profiles (
+            name,
+            age
+          )
+        `)
+        .eq('guardian_id', guardianId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting recent alerts:', error);
+      throw error;
+    }
+  },
+
+  // Create a new alert
+  async createAlert(guardianId, childId, message, alertType = 'general', severity = 'low') {
+    try {
+      const { data, error } = await supabase
+        .from('recent_alerts')
+        .insert([{
+          guardian_id: guardianId,
+          child_id: childId,
+          message: message,
+          alert_type: alertType,
+          severity: severity,
+          read: false
+        }])
+        .select(`
+          *,
+          child_profiles (
+            name,
+            age
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Log the alert creation
+      await activityAPI.logActivity(
+        'alert_created',
+        `Alert created: ${message}`,
+        {
+          alert_id: data.id,
+          child_id: childId,
+          alert_type: alertType,
+          severity: severity
+        }
+      );
+
+      // Send push notification
+      try {
+        await notificationsAPI.sendNotificationToUser(guardianId, {
+          title: 'New Alert',
+          body: message,
+          data: {
+            type: 'alert',
+            alertId: data.id,
+            childId: childId,
+            alertType: alertType,
+            severity: severity
+          }
+        });
+      } catch (notificationError) {
+        console.warn('Failed to send alert notification:', notificationError);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating alert:', error);
+      throw error;
+    }
+  },
+
+  // Mark alert as read
+  async markAlertAsRead(alertId) {
+    try {
+      const { data, error } = await supabase
+        .from('recent_alerts')
+        .update({ read: true })
+        .eq('id', alertId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error marking alert as read:', error);
+      throw error;
+    }
+  },
+
+  // Delete an alert
+  async deleteAlert(alertId) {
+    try {
+      const { error } = await supabase
+        .from('recent_alerts')
+        .delete()
+        .eq('id', alertId);
+
+      if (error) throw error;
+
+      // Log the deletion
+      await activityAPI.logActivity(
+        'alert_deleted',
+        'Alert deleted',
+        { alert_id: alertId }
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting alert:', error);
+      throw error;
+    }
+  },
+
+  // Get unread alerts count
+  async getUnreadAlertsCount(guardianId) {
+    try {
+      const { count, error } = await supabase
+        .from('recent_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('guardian_id', guardianId)
+        .eq('read', false);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Error getting unread alerts count:', error);
+      throw error;
+    }
+  }
+};
+
+// ===========================
 // UTILITY FUNCTIONS
 // ===========================
 
@@ -970,6 +1434,9 @@ export const guardianAPI = {
   settings: settingsAPI,
   realtime: realtimeAPI,
   notifications: notificationsAPI,
+  childProfiles: childProfilesAPI,
+  quickActions: quickActionsAPI,
+  summary: summaryAPI,
   utils
 }
 
