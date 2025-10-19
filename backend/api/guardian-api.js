@@ -8,7 +8,7 @@ import { Expo, ExpoPushMessage, ExpoPushToken } from 'expo-server-sdk'
 // ============================================================================
 
 // ===========================
-// AUTHENTICATION FUNCTIONS
+// AUTHENTICATION FUNCTIONS`
 // ===========================
 
 export const authAPI = {
