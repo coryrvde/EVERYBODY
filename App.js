@@ -15,6 +15,10 @@ import SignUpScreen from './app/screens/SignUpScreen';
 import Details from './app/screens/Details';
 import HomeScreen from './app/screens/HomeScreen';
 import ChildProfile from './app/screens/ChildProfile';
+import ParentalControlScreen from './app/screens/ParentalControlScreen';
+
+
+
 
 
 const Stack = createNativeStackNavigator();
@@ -22,14 +26,16 @@ const Tab = createBottomTabNavigator();
 
 function MyTabs() {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+    screenOptions={{headerShown: false}}
+    >
       <Tab.Screen name="Home" component={HomeScreen} 
       options={{
         tabBarIcon: ({ color, size }) => (
           <AntDesign name="home" color={color} size={size} />
         ),
       }}/>
-      <Tab.Screen name="Profile" component={HomeScreen}
+      <Tab.Screen name="Parental Control" component={ParentalControlScreen}
       options={{
         tabBarIcon: ({ color, size }) => (
           <Ionicons name="people-outline" color={color} size={size} />

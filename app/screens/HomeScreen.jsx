@@ -131,7 +131,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
@@ -249,56 +249,6 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* <View style={styles.bottomNav}>
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => handleNavigation('HOME')}
-        >
-          <View style={styles.navIcon}>
-            <Text style={styles.navIconText}>🏠</Text>
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'HOME' && styles.navLabelActive]}>
-            HOME
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => handleNavigation('Parent Control')}
-        >
-          <View style={styles.navIcon}>
-            <Text style={styles.navIconText}>👥</Text>
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'Parent Control' && styles.navLabelActive]}>
-            Parent Control
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => handleNavigation('Log')}
-        >
-          <View style={styles.navIcon}>
-            <Text style={styles.navIconText}>📋</Text>
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'Log' && styles.navLabelActive]}>
-            Log
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => handleNavigation('SETTINGS')}
-        >
-          <View style={styles.navIcon}>
-            <Text style={styles.navIconText}>⚙️</Text>
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'SETTINGS' && styles.navLabelActive]}>
-            SETTINGS
-          </Text>
-        </TouchableOpacity>
-      </View> */}
     </SafeAreaView>
   );
 }
@@ -435,3 +385,55 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+
+
+{/* <View style={styles.bottomNav}>
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => handleNavigation('HOME')}
+        >
+          <View style={styles.navIcon}>
+            <Text style={styles.navIconText}>🏠</Text>
+          </View>
+          <Text style={[styles.navLabel, activeTab === 'HOME' && styles.navLabelActive]}>
+            HOME
+          </Text>
+        </TouchableOpacity>
+
+       <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => handleNavigation('Parent Control')}
+        >
+          <View style={styles.navIcon}>
+            <Text style={styles.navIconText}>👥</Text>
+          </View>
+          <Text style={[styles.navLabel, activeTab === 'Parent Control' && styles.navLabelActive]}>
+            Parent Control
+          </Text>
+        </TouchableOpacity> 
+
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => handleNavigation('Log')}
+        >
+          <View style={styles.navIcon}>
+            <Text style={styles.navIconText}>📋</Text>
+          </View>
+          <Text style={[styles.navLabel, activeTab === 'Log' && styles.navLabelActive]}>
+            Log
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => handleNavigation('SETTINGS')}
+        >
+          <View style={styles.navIcon}>
+            <Text style={styles.navIconText}>⚙️</Text>
+          </View>
+          <Text style={[styles.navLabel, activeTab === 'SETTINGS' && styles.navLabelActive]}>
+            SETTINGS
+          </Text>
+        </TouchableOpacity>
+      </View> */}
