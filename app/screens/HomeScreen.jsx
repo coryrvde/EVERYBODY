@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
-import { guardianAPI } from '../backend/api/guardian-api';
+import { guardianAPI } from '../../backend/api/guardian-api';
 
 export default function HomeScreen() {
   const navigation = useNavigation();

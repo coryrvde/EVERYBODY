@@ -1,4 +1,4 @@
-import { supabase } from '../app/supabase'
+import { supabase } from '../../app/supabase'
 import { Expo, ExpoPushMessage, ExpoPushToken } from 'expo-server-sdk'
 
 // ============================================================================
@@ -1240,10 +1240,10 @@ export const summaryAPI = {
 };
 
 // ===========================
-// ALERTS FUNCTIONS
+// RECENT ALERTS FUNCTIONS (guardian -> child alerts feed)
 // ===========================
 
-export const alertsAPI = {
+const recentAlertsAPI = {
   // Get recent alerts for a guardian
   async getRecentAlerts(guardianId) {
     try {
@@ -1437,6 +1437,7 @@ export const guardianAPI = {
   childProfiles: childProfilesAPI,
   quickActions: quickActionsAPI,
   summary: summaryAPI,
+  recentAlerts: recentAlertsAPI,
   utils
 }
 

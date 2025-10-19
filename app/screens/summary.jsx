@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { guardianAPI } from '../backend/api/guardian-api';
+import { guardianAPI } from '../../backend/api/guardian-api';
 
 export default function SummaryScreen() {
   const navigation = useNavigation();
