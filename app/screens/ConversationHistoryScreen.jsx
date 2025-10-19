@@ -27,6 +27,7 @@ import AIContentDetector from '../services/aiContentDetector';
 import { supabase } from '../supabase';
 import RealTimeMonitor from '../services/realTimeMonitor';
 import TelegramMonitor from '../services/telegramMonitor';
+import { telegramBotService } from '../services/telegramBotService';
 import { realTimeAIMonitor } from '../services/realTimeAIMonitor';
 import { smartAIAnalyzer } from '../services/smartAIAnalyzer';
 import { AIMonitoringConfig, getSeverityColor, getSeverityBackground } from '../config/aiMonitoringConfig';
@@ -34,6 +35,7 @@ import { AIMonitoringConfig, getSeverityColor, getSeverityBackground } from '../
 export default function ConversationHistoryScreen() {
   const navigation = useNavigation();
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [showTelegramOnly, setShowTelegramOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiMonitoringStatus, setAiMonitoringStatus] = useState({
     enabled: true,
@@ -45,6 +47,10 @@ export default function ConversationHistoryScreen() {
     enabled: true,
     active: false
   });
+  const [telegramConversations, setTelegramConversations] = useState([]);
+  const [loadingTelegram, setLoadingTelegram] = useState(false);
+  const [botInfo, setBotInfo] = useState(null);
+  const [botInviteLink, setBotInviteLink] = useState(null);
 
   // Initialize AI monitoring when logged in
   useEffect(() => {
@@ -54,6 +60,7 @@ export default function ConversationHistoryScreen() {
         return;
       }
       await initializeSmartAIMonitoring(session.user.id);
+      await initializeTelegramBot();
       initializeTelegramMonitoring();
     })();
     return () => {
@@ -153,26 +160,169 @@ export default function ConversationHistoryScreen() {
     }
   };
 
+  const initializeTelegramBot = async () => {
+    try {
+      console.log('🤖 Initializing Telegram Bot...');
+      
+      // Initialize the bot service
+      const success = await telegramBotService.initialize();
+      
+      if (success) {
+        // Get bot information
+        const botInfo = await telegramBotService.getBotInfo();
+        setBotInfo(botInfo);
+        
+        // Generate invite link
+        const inviteLink = telegramBotService.generateBotInviteLink();
+        setBotInviteLink(inviteLink);
+        
+        console.log('✅ Telegram Bot initialized successfully');
+      } else {
+        console.error('❌ Failed to initialize Telegram Bot');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing Telegram Bot:', error);
+    }
+  };
+
   const initializeTelegramMonitoring = async () => {
     try {
-      // Start Telegram monitoring
-      await TelegramMonitor.startTelegramMonitoring('olivia');
-      
-      // Set up Telegram alert callback
-      TelegramMonitor.addAlertCallback((alert) => {
-        setRealTimeAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
-        showAlertNotification(alert);
-      });
-      
-      // Update Telegram monitoring status
-      setTelegramMonitoringStatus(prev => ({
-        ...prev,
-        active: true
-      }));
+      // Get current user
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+
+      // Get linked children for this parent
+      const { data: children, error: childrenError } = await supabase
+        .from('family_links')
+        .select('child_id')
+        .eq('parent_id', user.id);
+
+      if (childrenError) {
+        console.error('Error getting linked children:', childrenError);
+        return;
+      }
+
+      if (children && children.length > 0) {
+        // Use the first child's ID for monitoring
+        const childId = children[0].child_id;
+        
+        // Start Telegram monitoring
+        await TelegramMonitor.startTelegramMonitoring(childId);
+        
+        // Set up Telegram alert callback
+        TelegramMonitor.addAlertCallback((alert) => {
+          setRealTimeAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
+          showAlertNotification(alert);
+        });
+        
+        // Load Telegram conversations
+        await loadTelegramConversations();
+        
+        // Update Telegram monitoring status
+        setTelegramMonitoringStatus(prev => ({
+          ...prev,
+          active: true
+        }));
+      } else {
+        console.log('No linked children found for Telegram monitoring');
+      }
       
     } catch (error) {
       console.error('Error initializing Telegram monitoring:', error);
     }
+  };
+
+  const loadTelegramConversations = async () => {
+    try {
+      setLoadingTelegram(true);
+      
+      // Get current user
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) {
+        console.log('No user session found');
+        return;
+      }
+
+      // Get linked children for this parent
+      const { data: children, error: childrenError } = await supabase
+        .from('family_links')
+        .select('child_id')
+        .eq('parent_id', user.id);
+
+      if (childrenError) {
+        console.error('Error getting linked children:', childrenError);
+        return;
+      }
+
+      const childIds = children?.map(child => child.child_id) || [];
+
+      if (childIds.length === 0) {
+        console.log('No linked children found for Telegram conversations');
+        setTelegramConversations([]);
+        return;
+      }
+
+      // Get Telegram conversations for linked children
+      const { data: conversations, error: conversationsError } = await supabase
+        .from('conversation_logs')
+        .select('*')
+        .eq('app_name', 'Telegram')
+        .in('child_id', childIds)
+        .order('timestamp', { ascending: false })
+        .limit(50);
+
+      if (conversationsError) {
+        console.error('Error loading Telegram conversations:', conversationsError);
+        return;
+      }
+
+      // Transform data for display
+      const formattedConversations = (conversations || []).map(conv => ({
+        id: conv.id,
+        app: 'Telegram',
+        contact: conv.contact || 'Unknown Contact',
+        timestamp: formatTimestamp(conv.timestamp),
+        severity: conv.severity || 'low',
+        flaggedContent: conv.flagged_content || 'No flagged content',
+        preview: conv.flagged_content?.substring(0, 50) + '...' || 'No preview available',
+        flaggedWords: conv.flagged_content ? [conv.flagged_content] : [],
+        messageCount: conv.message_count || 1,
+        date: formatDate(conv.timestamp),
+        confidence: conv.confidence || 0.5
+      }));
+
+      setTelegramConversations(formattedConversations);
+      console.log('✅ Loaded Telegram conversations:', formattedConversations.length);
+
+    } catch (error) {
+      console.error('❌ Error loading Telegram conversations:', error);
+    } finally {
+      setLoadingTelegram(false);
+    }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    const now = new Date();
+    const messageTime = new Date(timestamp);
+    const diffInHours = Math.floor((now - messageTime) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    if (diffInHours < 48) return 'Yesterday';
+    return messageTime.toLocaleDateString();
+  };
+
+  const formatDate = (timestamp) => {
+    const messageTime = new Date(timestamp);
+    const now = new Date();
+    const diffInDays = Math.floor((now - messageTime) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    return messageTime.toLocaleDateString();
   };
 
   const showAlertNotification = (alert) => {
@@ -197,8 +347,8 @@ export default function ConversationHistoryScreen() {
     navigation.navigate('AI Monitoring');
   };
 
-  // Sample data - in production, this would come from your monitoring service
-  const conversationLogs = [
+  // Combine sample data with real Telegram data
+  const sampleConversationLogs = [
     {
       id: 1,
       app: 'WhatsApp',
@@ -258,20 +408,11 @@ export default function ConversationHistoryScreen() {
       flaggedWords: ['personal information'],
       messageCount: 5,
       date: '2 days ago'
-    },
-    {
-      id: 6,
-      app: 'Telegram',
-      contact: 'Unknown Contact',
-      timestamp: '2 days ago',
-      severity: 'high',
-      flaggedContent: 'Inappropriate content detected',
-      preview: 'Hey, want to see some...',
-      flaggedWords: ['inappropriate content', 'explicit material'],
-      messageCount: 20,
-      date: '2 days ago'
     }
   ];
+
+  // Combine sample data with real Telegram conversations
+  const conversationLogs = [...telegramConversations, ...sampleConversationLogs];
 
   const stats = {
     totalFlags: 55,
@@ -304,6 +445,7 @@ export default function ConversationHistoryScreen() {
   const filteredLogs = conversationLogs.filter(log => {
     if (selectedFilter !== 'all' && log.severity !== selectedFilter) return false;
     if (searchQuery && !log.contact.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (showTelegramOnly && log.app !== 'Telegram') return false;
     return true;
   });
 
@@ -401,6 +543,43 @@ export default function ConversationHistoryScreen() {
         )}
       </View>
 
+      {/* Telegram Bot Management */}
+      {botInfo && (
+        <View style={styles.botManagementContainer}>
+          <View style={styles.botStatusCard}>
+            <View style={styles.botStatusHeader}>
+              <Bot size={20} color="#0088CC" strokeWidth={2} />
+              <Text style={styles.botStatusTitle}>Telegram Bot</Text>
+              <View style={[styles.statusIndicator, { backgroundColor: '#10B981' }]} />
+            </View>
+            <Text style={styles.botStatusText}>
+              {botInfo.first_name} • @{botInfo.username}
+            </Text>
+            <Text style={styles.botStatusSubtext}>
+              Send this link to your child to start monitoring
+            </Text>
+            {botInviteLink && (
+              <TouchableOpacity 
+                style={styles.inviteButton}
+                onPress={() => {
+                  // Copy to clipboard or open link
+                  Alert.alert(
+                    'Bot Invite Link',
+                    `Send this link to your child:\n\n${botInviteLink}`,
+                    [
+                      { text: 'Copy Link', onPress: () => console.log('Copy link') },
+                      { text: 'OK', style: 'cancel' }
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.inviteButtonText}>📱 Get Bot Invite Link</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Search and Filter */}
       <View style={styles.searchFilterContainer}>
         <View style={styles.searchBar}>
@@ -449,11 +628,32 @@ export default function ConversationHistoryScreen() {
             Low Risk
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.chip, showTelegramOnly && styles.chipActive]}
+          onPress={() => setShowTelegramOnly(!showTelegramOnly)}
+        >
+          <Text style={[styles.chipText, showTelegramOnly && styles.chipTextActive]}>
+            📱 Telegram Only
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.chip, styles.refreshChip]}
+          onPress={loadTelegramConversations}
+        >
+          <Text style={[styles.chipText, styles.refreshChipText]}>
+            🔄 Refresh
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Conversation Logs */}
       <ScrollView style={styles.logsList} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          {loadingTelegram && (
+            <Text style={styles.loadingText}>Loading Telegram...</Text>
+          )}
+        </View>
         
         {filteredLogs.map((log) => (
           <TouchableOpacity 
@@ -658,15 +858,80 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: '#FFF',
   },
+  refreshChip: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  refreshChipText: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
   logsList: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  // Bot Management Styles
+  botManagementContainer: {
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
+  botStatusCard: {
+    backgroundColor: '#F0F9FF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E0F2FE',
+  },
+  botStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  botStatusTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginLeft: 8,
+    flex: 1,
+  },
+  botStatusText: {
+    fontSize: 14,
+    color: '#0088CC',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  botStatusSubtext: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 12,
+  },
+  inviteButton: {
+    backgroundColor: '#0088CC',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  inviteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   logCard: {
     backgroundColor: '#FFF',

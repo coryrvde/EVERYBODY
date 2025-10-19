@@ -4,8 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
 import { guardianClient } from '../api/guardian-client';
-import { notificationService } from '../services/notificationService';
-import { realTimeAIMonitor } from '../services/realTimeAIMonitor';
+import { simpleAlertService } from '../services/simpleAlertService';
 import { 
   Users, 
   Activity, 
@@ -52,8 +51,18 @@ export default function HomeScreen() {
     if (guardianId) {
       setupRealtimeAlerts();
       setupRealTimeNotifications();
+      initializeAlertNotifications();
     }
   }, [guardianId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (simpleAlertService) {
+        simpleAlertService.cleanup();
+      }
+    };
+  }, []);
 
   async function initializeData() {
     try {
@@ -101,6 +110,139 @@ export default function HomeScreen() {
       setAlerts(alertsData);
     } catch (error) {
       console.error('Error loading alerts:', error);
+    }
+  }
+
+  async function initializeAlertNotifications() {
+    try {
+      console.log('🔔 Initializing alert notifications for guardian:', guardianId);
+      
+      // Initialize the simple alert service
+      const success = await simpleAlertService.initialize(guardianId);
+      
+      if (success) {
+        console.log('✅ Alert notifications initialized successfully');
+        
+        // Add callback to handle new alerts
+        simpleAlertService.addAlertCallback((alert) => {
+          console.log('🔔 New alert received in HomeScreen:', alert);
+          
+          // Update local alerts state
+          setAlerts(prev => [alert, ...prev.slice(0, 49)]); // Keep last 50 alerts
+          
+          // Show alert notification
+          showAlertNotification(alert);
+        });
+        
+        // Load initial alerts
+        await loadInitialAlerts();
+        
+      } else {
+        console.error('❌ Failed to initialize alert notifications');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing alert notifications:', error);
+    }
+  }
+
+  async function loadInitialAlerts() {
+    try {
+      const recentAlerts = await simpleAlertService.getRecentAlerts(10);
+      setAlerts(recentAlerts);
+      console.log('📊 Loaded initial alerts:', recentAlerts.length);
+    } catch (error) {
+      console.error('❌ Error loading initial alerts:', error);
+    }
+  }
+
+  function showAlertNotification(alert) {
+    try {
+      const severityEmoji = getSeverityEmoji(alert.severity);
+      const alertTypeEmoji = getAlertTypeEmoji(alert.alert_type);
+      
+      const title = `${severityEmoji} ${alert.severity?.toUpperCase() || 'ALERT'} Alert - ${alertTypeEmoji}`;
+      const message = `📱 App: ${alert.app_name || 'Unknown'}\n👤 Contact: ${alert.contact || 'Unknown'}\n📝 Content: ${alert.flagged_content}\n🤖 AI Analysis: ${alert.ai_reasoning || 'Content flagged by AI'}\n🎯 Confidence: ${Math.round((alert.confidence || 0.8) * 100)}%`;
+
+      Alert.alert(
+        title,
+        message,
+        [
+          {
+            text: 'View Details',
+            onPress: () => handleViewAlert(alert)
+          },
+          {
+            text: 'Acknowledge',
+            onPress: () => handleAcknowledgeAlert(alert.id)
+          },
+          {
+            text: 'Dismiss',
+            style: 'cancel'
+          }
+        ],
+        { 
+          cancelable: true,
+          userInterfaceStyle: 'light'
+        }
+      );
+
+    } catch (error) {
+      console.error('❌ Error showing alert notification:', error);
+    }
+  }
+
+  function getSeverityEmoji(severity) {
+    switch (severity?.toLowerCase()) {
+      case 'critical': return '🚨';
+      case 'high': return '⚠️';
+      case 'medium': return '🔶';
+      case 'low': return '🔵';
+      default: return '📢';
+    }
+  }
+
+  function getAlertTypeEmoji(alertType) {
+    switch (alertType?.toLowerCase()) {
+      case 'content_flag': return '🚩';
+      case 'suspicious_activity': return '👁️';
+      case 'emergency': return '🚨';
+      case 'location': return '📍';
+      case 'app_usage': return '📱';
+      default: return '📢';
+    }
+  }
+
+  function handleViewAlert(alert) {
+    console.log('👁️ Viewing alert details:', alert);
+    // You can navigate to a detailed alert view here
+  }
+
+  function handleAcknowledgeAlert(alertId) {
+    console.log('✅ Acknowledging alert:', alertId);
+    // You can implement alert acknowledgment here
+  }
+
+  async function createTestAlert() {
+    try {
+      console.log('🧪 Creating test alert...');
+      
+      // Create a test alert
+      const testAlert = await simpleAlertService.createTestAlert(
+        'test-child-id',
+        'I want to skip school today and meet my friends',
+        'medium'
+      );
+      
+      if (testAlert) {
+        console.log('✅ Test alert created successfully');
+        Alert.alert('Test Alert Created', 'A test alert has been created and should appear shortly.');
+      } else {
+        console.error('❌ Failed to create test alert');
+        Alert.alert('Error', 'Failed to create test alert. Please check the console for details.');
+      }
+    } catch (error) {
+      console.error('❌ Error creating test alert:', error);
+      Alert.alert('Error', 'Failed to create test alert. Please check the console for details.');
     }
   }
 
@@ -361,6 +503,7 @@ export default function HomeScreen() {
               <Text style={styles.actionSubtitle}>Block apps/sites</Text>
             </TouchableOpacity>
 
+
             <TouchableOpacity 
               style={styles.actionCard}
               onPress={() => navigation.navigate('AI Monitoring')}
@@ -370,6 +513,17 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.actionTitle}>AI Monitoring</Text>
               <Text style={styles.actionSubtitle}>Smart detection</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={createTestAlert}
+            >
+              <View style={styles.actionIcon}>
+                <Bell size={28} color="#F59E0B" />
+              </View>
+              <Text style={styles.actionTitle}>Test Alert</Text>
+              <Text style={styles.actionSubtitle}>Create test alert</Text>
             </TouchableOpacity>
           </View>
         </View>

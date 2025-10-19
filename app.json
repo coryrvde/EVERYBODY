@@ -17,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.safiy.guardianai",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo3.png",
         "backgroundColor": "#ffffff"
@@ -25,6 +26,11 @@
     },
     "web": {
       "favicon": "./assets/logo3.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ca38d9f0-578a-4061-b13a-5236fb78dc02"
+      }
     }
   }
 }
