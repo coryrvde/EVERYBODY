@@ -35,7 +35,35 @@ export default function LoginScreen() {
         await supabase.auth.setSession(session);
       }
 
-      navigation.navigate('Main');
+      // Check if user has a role set
+      console.log('Checking role for user:', session.user.id);
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      console.log('Profile check result:', { profile, profileError });
+
+      if (profileError || !profile?.role) {
+        // User doesn't have a role set, go to role selection
+        console.log('No role found, navigating to role selection');
+        Alert.alert(
+          'Welcome!',
+          'Please choose your role to continue.',
+          [
+            {
+              text: 'Continue',
+              onPress: () => navigation.navigate('Role Selection')
+            }
+          ]
+        );
+      } else {
+        // User has a role, go to main app
+        console.log('Role found:', profile.role, 'navigating to main');
+        Alert.alert('Welcome back!', `Signed in as ${profile.role}.`);
+        navigation.navigate('Main');
+      }
     } catch (e) {
       console.error('Unexpected login error:', e);
     }

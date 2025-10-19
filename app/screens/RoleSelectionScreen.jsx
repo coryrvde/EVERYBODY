@@ -40,11 +40,22 @@ export default function RoleSelectionScreen() {
       }
 
       console.log('RoleSelectionScreen: Role set successfully, navigating...');
-      if (role === 'parent') {
-        navigation.navigate('LinkChild');
-      } else {
-        navigation.navigate('ChildQR');
-      }
+      Alert.alert(
+        'Role Set!',
+        `You are now registered as a ${role}.`,
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              if (role === 'parent') {
+                navigation.navigate('LinkChild');
+              } else {
+                navigation.navigate('ChildQR');
+              }
+            }
+          }
+        ]
+      );
     } catch (e) {
       console.error('Error setting role:', e);
     }

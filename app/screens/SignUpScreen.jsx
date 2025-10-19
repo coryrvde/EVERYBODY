@@ -35,6 +35,8 @@ export default function SignUpScreen() {
       const redirectTo = EMAIL_REDIRECT_URL && EMAIL_REDIRECT_URL.length > 0
         ? EMAIL_REDIRECT_URL
         : Linking.createURL('auth-callback');
+      
+      console.log('Attempting signup with:', { email, fullName, redirectTo });
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
@@ -46,6 +48,8 @@ export default function SignUpScreen() {
           }
         }
       });
+      
+      console.log('Signup response:', { data, error });
 
       if (error) {
         Alert.alert('Sign Up Failed', error.message);
@@ -53,8 +57,29 @@ export default function SignUpScreen() {
       }
 
       if (data.user) {
-        Alert.alert('Success', 'Account created! Choose your role to continue.');
-        navigation.navigate('Role Selection');
+        // Always redirect to login after signup for consistency
+        Alert.alert(
+          'Account Created!', 
+          'We sent you a verification link. Please check your email and click the link to verify your account, then come back to sign in.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Login')
+            }
+          ]
+        );
+      } else {
+        // No user returned, email confirmation required
+        Alert.alert(
+          'Check Your Email', 
+          'We sent you a verification link. Please check your email and click the link to verify your account, then come back to sign in.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Login')
+            }
+          ]
+        );
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
