@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
-import { Home, Users, ClipboardList, Settings, ArrowLeft, User } from 'lucide-react';
 
 export default function ParentalControlScreen() {
   const [activeTab, setActiveTab] = useState('parent-control');
@@ -27,9 +26,6 @@ export default function ParentalControlScreen() {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <ArrowLeft color="#ffffff" size={28} />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Parental Control</Text>
       </View>
 
@@ -72,66 +68,6 @@ export default function ParentalControlScreen() {
             <Text style={styles.actionButtonText}>Manage{'\n'}Profile</Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => setActiveTab('home')}
-        >
-          <Home 
-            color={activeTab === 'home' ? '#001a3d' : '#999999'} 
-            size={28} 
-          />
-          <Text style={[
-            styles.navText,
-            activeTab === 'home' && styles.navTextActive
-          ]}>HOME</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => setActiveTab('parent-control')}
-        >
-          <Users 
-            color={activeTab === 'parent-control' ? '#001a3d' : '#999999'} 
-            size={28} 
-            fill={activeTab === 'parent-control' ? '#001a3d' : 'none'}
-          />
-          <Text style={[
-            styles.navText,
-            activeTab === 'parent-control' && styles.navTextActive
-          ]}>Parent Control</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => setActiveTab('log')}
-        >
-          <ClipboardList 
-            color={activeTab === 'log' ? '#001a3d' : '#999999'} 
-            size={28} 
-          />
-          <Text style={[
-            styles.navText,
-            activeTab === 'log' && styles.navTextActive
-          ]}>Log</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => setActiveTab('settings')}
-        >
-          <Settings 
-            color={activeTab === 'settings' ? '#001a3d' : '#999999'} 
-            size={28} 
-          />
-          <Text style={[
-            styles.navText,
-            activeTab === 'settings' && styles.navTextActive
-          ]}>SETTINGS</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
