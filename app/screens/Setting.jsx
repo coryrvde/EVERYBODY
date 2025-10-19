@@ -1,136 +1,205 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView,
+  SafeAreaView,
+  StatusBar
+} from 'react-native';
+import { 
+  ChevronLeft,
+  Lock, 
+  Pause, 
+  Clock, 
+  Globe, 
+  Grid, 
+  Shield, 
+  MapPin 
+} from 'lucide-react-native';
 
-export default function SettingsScreen() {
-  const [activeTab, setActiveTab] = useState('SETTINGS');
+export default function ParentalControlSettings() {
+  const [childName] = useState('Olivia');
+  const [lastActive] = useState('1hr 30 min');
+  const [blockedApps] = useState(4);
+  const [blockedWebsites] = useState(50);
+  const [appsLimits] = useState(12);
+  const [savedLocations] = useState(2);
 
-  const handleNavigation = (tab) => {
-    setActiveTab(tab);
-    console.log(`Navigating to ${tab}`);
+  const handleBack = () => {
+    console.log('Back pressed');
   };
 
-  const handleBackPress = () => {
-    console.log('Back button pressed');
+  const handleLockPhone = () => {
+    console.log('Lock phone pressed');
   };
 
-  const handleProfilePress = () => {
-    console.log('Profile button pressed');
+  const handlePause = () => {
+    console.log('Pause pressed');
   };
 
-  const handleSettingPress = (setting) => {
-    console.log(`${setting} pressed`);
+  const handleAddTime = () => {
+    console.log('Add time pressed');
+  };
+
+  const handleBlockApps = () => {
+    console.log('Block apps pressed');
+  };
+
+  const handleAppsLimits = () => {
+    console.log('Apps limits pressed');
+  };
+
+  const handleDeviceProtection = () => {
+    console.log('Device protection pressed');
+  };
+
+  const handleGPS = () => {
+    console.log('GPS pressed');
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-          <Text style={styles.backIcon}>←</Text>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <ChevronLeft size={28} color="#000" strokeWidth={2} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Setting</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>{childName}'s Phone</Text>
+        <View style={styles.placeholder} />
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.profileButton} onPress={handleProfilePress}>
-            <Text style={styles.profileIcon}>👤</Text>
-            <Text style={styles.profileIconSmall}>−</Text>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {/* Profile Section */}
+        <View style={styles.profileSection}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatarRing}>
+              <View style={styles.avatar}>
+                <View style={styles.avatarHead} />
+                <View style={styles.avatarBody} />
+              </View>
+            </View>
+          </View>
+          <Text style={styles.childName}>{childName}</Text>
+          <Text style={styles.lastActive}>{lastActive}</Text>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handleLockPhone}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconContainer}>
+              <Lock size={22} color="#5B8DEF" strokeWidth={2.5} />
+            </View>
+            <Text style={styles.actionButtonText}>Lock Phone</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.shareButton}>
-            <Text style={styles.shareIcon}>⇄</Text>
+
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handlePause}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconContainer}>
+              <Pause size={22} color="#5B8DEF" strokeWidth={2.5} />
+            </View>
+            <Text style={styles.actionButtonText}>Pause</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handleAddTime}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconContainer}>
+              <Clock size={22} color="#5B8DEF" strokeWidth={2.5} />
+            </View>
+            <Text style={styles.actionButtonText}>Add Time</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.logoContainer}>
-          <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>Insert App{'\n'}Logo</Text>
-          </View>
+        {/* Features Section */}
+        <Text style={styles.featuresTitle}>Features</Text>
+
+        <View style={styles.featuresGrid}>
+          {/* Block Apps & Websites */}
+          <TouchableOpacity 
+            style={[styles.featureCard, styles.blockAppsCard]} 
+            onPress={handleBlockApps}
+            activeOpacity={0.8}
+          >
+            <View style={styles.featureTopRow}>
+              <View style={styles.featureTextContent}>
+                <Text style={styles.featureTitle}>Block Apps &</Text>
+                <Text style={styles.featureTitle}>Websites</Text>
+              </View>
+            </View>
+            <View style={styles.featureBottomRow}>
+              <View>
+                <Text style={styles.featureSubtext}>{blockedApps} Apps</Text>
+                <Text style={styles.featureSubtext}>{blockedWebsites} Websites</Text>
+              </View>
+              <View style={styles.featureIconCircle}>
+                <Globe size={28} color="#5B8DEF" strokeWidth={2} />
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Apps Limits */}
+          <TouchableOpacity 
+            style={[styles.featureCard, styles.appsLimitsCard]} 
+            onPress={handleAppsLimits}
+            activeOpacity={0.8}
+          >
+            <View style={styles.featureIconCircleTop}>
+              <Grid size={28} color="#FFF" strokeWidth={2} />
+            </View>
+            <View style={styles.featureBottomContent}>
+              <Text style={styles.featureTitleWhite}>Apps Limits</Text>
+              <Text style={styles.featureSubtextWhite}>{appsLimits} Apps</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Device Protection */}
+          <TouchableOpacity 
+            style={[styles.featureCard, styles.deviceProtectionCard]} 
+            onPress={handleDeviceProtection}
+            activeOpacity={0.8}
+          >
+            <View style={styles.featureIconCircleTop}>
+              <Shield size={28} color="#FFF" strokeWidth={2} />
+            </View>
+            <View style={styles.featureBottomContent}>
+              <Text style={styles.featureTitleWhite}>Device</Text>
+              <Text style={styles.featureTitleWhite}>Protection</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* GPS */}
+          <TouchableOpacity 
+            style={[styles.featureCard, styles.gpsCard]} 
+            onPress={handleGPS}
+            activeOpacity={0.8}
+          >
+            <View style={styles.featureIconCircleTop}>
+              <MapPin size={28} color="#FFF" strokeWidth={2} />
+            </View>
+            <View style={styles.featureBottomContent}>
+              <Text style={styles.featureTitleWhite}>GPS</Text>
+              <Text style={styles.featureSubtextWhite}>{savedLocations} Saved</Text>
+            </View>
+          </TouchableOpacity>
         </View>
-
-        <View style={styles.buttonGrid}>
-          <TouchableOpacity 
-            style={styles.gridButton}
-            onPress={() => handleSettingPress('App appearance')}
-          >
-            <Text style={styles.gridButtonText}>App appearance</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.gridButton}
-            onPress={() => handleSettingPress('Privacy and Data')}
-          >
-            <Text style={styles.gridButtonText}>Privacy and{'\n'}Data</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.gridButton}
-            onPress={() => handleSettingPress('User access & Permissions')}
-          >
-            <Text style={styles.gridButtonText}>User access &{'\n'}Permissions</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.gridButton}
-            onPress={() => handleSettingPress('Support & Feedback')}
-          >
-            <Text style={styles.gridButtonText}>Support &{'\n'}Feedback</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.bottomNav}>
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => handleNavigation('HOME')}
-        >
-          <View style={styles.navIcon}>
-            <Text style={styles.navIconText}>🏠</Text>
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'HOME' && styles.navLabelActive]}>
-            HOME
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => handleNavigation('Parent Control')}
-        >
-          <View style={styles.navIcon}>
-            <Text style={styles.navIconText}>👥</Text>
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'Parent Control' && styles.navLabelActive]}>
-            Parent Control
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => handleNavigation('Log')}
-        >
-          <View style={styles.navIcon}>
-            <Text style={styles.navIconText}>📋</Text>
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'Log' && styles.navLabelActive]}>
-            Log
-          </Text>
-        </TouchableOpacity>
-
-        {/* <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => handleNavigation('SETTINGS')}
-        >
-          <View style={styles.navIcon}>
-            <Text style={styles.navIconText}⚙️</Text>
-          </View>
-          <Text style={[styles.navLabel, activeTab === 'SETTINGS' && styles.navLabelActive]}>
-            SETTINGS
-          </Text>
-        </TouchableOpacity> */}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -138,139 +207,208 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8F9FC',
   },
   header: {
-    backgroundColor: '#0A1E4A',
-    paddingTop: 40,
-    paddingBottom: 25,
-    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+    width: 44,
+    height: 44,
     alignItems: 'center',
-  },
-  backIcon: {
-    fontSize: 32,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 38,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    flex: 1,
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
   },
-  headerSpacer: {
-    width: 40,
+  placeholder: {
+    width: 44,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  contentContainer: {
+    paddingBottom: 32,
+  },
+  profileSection: {
     alignItems: 'center',
-    marginBottom: 30,
+    paddingVertical: 32,
+    backgroundColor: '#FFFFFF',
   },
-  profileButton: {
-    flexDirection: 'row',
+  avatarContainer: {
+    marginBottom: 16,
+  },
+  avatarRing: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: '#4DD0E1',
     alignItems: 'center',
-  },
-  profileIcon: {
-    fontSize: 32,
-    color: '#000000',
-  },
-  profileIconSmall: {
-    fontSize: 24,
-    color: '#000000',
-    marginLeft: -8,
-  },
-  shareButton: {
-    padding: 8,
-  },
-  shareIcon: {
-    fontSize: 28,
-    color: '#000000',
-    fontWeight: 'bold',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 50,
-  },
-  logoPlaceholder: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: '#1A1A1A',
     justifyContent: 'center',
+    padding: 5,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#EF9A9A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarHead: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#8D6E63',
+    marginTop: 20,
+  },
+  avatarBody: {
+    width: 50,
+    height: 30,
+    backgroundColor: '#4CAF50',
+    marginTop: 4,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+  },
+  childName: {
+    fontSize: 26,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 6,
+  },
+  lastActive: {
+    fontSize: 15,
+    color: '#757575',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  actionButton: {
     alignItems: 'center',
   },
-  logoText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '500',
-    textAlign: 'center',
+  actionIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EBF3FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
-  buttonGrid: {
+  actionButtonText: {
+    fontSize: 13,
+    color: '#5B8DEF',
+    fontWeight: '600',
+  },
+  featuresTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    paddingHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  featuresGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    gap: 16,
   },
-  gridButton: {
-    width: '48%',
-    backgroundColor: '#E0E0E0',
-    paddingVertical: 30,
-    paddingHorizontal: 20,
+  featureCard: {
     borderRadius: 20,
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 100,
+    padding: 20,
+    width: '46%',
+    minHeight: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  gridButtonText: {
-    fontSize: 16,
-    color: '#333333',
-    fontWeight: '500',
-    textAlign: 'center',
+  blockAppsCard: {
+    backgroundColor: '#E3F2FD',
+  },
+  appsLimitsCard: {
+    backgroundColor: '#FFB74D',
+  },
+  deviceProtectionCard: {
+    backgroundColor: '#9575CD',
+  },
+  gpsCard: {
+    backgroundColor: '#4DB6AC',
+  },
+  featureTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  featureTextContent: {
+    flex: 1,
+  },
+  featureBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginTop: 'auto',
+  },
+  featureIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureIconCircleTop: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  featureBottomContent: {
+    marginTop: 'auto',
+  },
+  featureTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1A1A1A',
     lineHeight: 22,
   },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+  featureTitleWhite: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 22,
   },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
+  featureSubtext: {
+    fontSize: 13,
+    color: '#E57373',
+    marginTop: 4,
+    fontWeight: '600',
   },
-  navIcon: {
-    marginBottom: 4,
-  },
-  navIconText: {
-    fontSize: 24,
-  },
-  navLabel: {
-    fontSize: 10,
-    color: '#999999',
-    fontWeight: '500',
-  },
-  navLabelActive: {
-    color: '#000000',
+  featureSubtextWhite: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 4,
+    fontWeight: '600',
   },
 });
