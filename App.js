@@ -16,7 +16,7 @@ import Details from './app/screens/Details';
 import HomeScreen from './app/screens/HomeScreen';
 import ChildProfile from './app/screens/ChildProfile';
 import ParentalControlScreen from './app/screens/ParentalControlScreen';
-
+import ConversationHistoryScreen from './app/screens/ConversationHistoryScreen';
 
 
 
@@ -42,7 +42,7 @@ function MyTabs() {
         ),
       }}
       />
-      <Tab.Screen name="Log" component={HomeScreen}
+      <Tab.Screen name="Log" component={ConversationHistoryScreen}
       options={{
         tabBarIcon: ({ color, size }) => (
           <Feather name="clipboard" size={size} color={color} />
