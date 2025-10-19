@@ -1,0 +1,46 @@
+-- Add missing parent_id column to ai_analysis_results table
+-- Run this in your Supabase SQL Editor
+
+-- Check if parent_id column exists in ai_analysis_results
+DO $$
+BEGIN
+    -- Add parent_id column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' 
+        AND table_name = 'ai_analysis_results' 
+        AND column_name = 'parent_id'
+    ) THEN
+        ALTER TABLE public.ai_analysis_results 
+        ADD COLUMN parent_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE;
+        
+        -- Update existing records to set parent_id based on family_links
+        UPDATE public.ai_analysis_results 
+        SET parent_id = (
+            SELECT fl.parent_id 
+            FROM public.family_links fl 
+            WHERE fl.child_id = ai_analysis_results.child_id 
+            LIMIT 1
+        )
+        WHERE parent_id IS NULL;
+    END IF;
+END $$;
+
+-- Create index for the parent_id column
+CREATE INDEX IF NOT EXISTS idx_ai_analysis_results_parent_id ON public.ai_analysis_results(parent_id);
+
+-- Verify the column was added
+SELECT 'parent_id column added to ai_analysis_results' as status
+WHERE EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'ai_analysis_results' 
+    AND column_name = 'parent_id'
+);
+
+-- Show all columns in the table for verification
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns 
+WHERE table_schema = 'public' 
+AND table_name = 'ai_analysis_results'
+ORDER BY ordinal_position;
