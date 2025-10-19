@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Alert } from 'react-native';
 import * as Linking from 'expo-linking';
+import { EMAIL_REDIRECT_URL } from '../config/links';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../supabase';
 import { useNavigation } from '@react-navigation/native';
@@ -31,7 +32,9 @@ export default function SignUpScreen() {
     }
 
     try {
-      const redirectTo = Linking.createURL('auth-callback');
+      const redirectTo = EMAIL_REDIRECT_URL && EMAIL_REDIRECT_URL.length > 0
+        ? EMAIL_REDIRECT_URL
+        : Linking.createURL('auth-callback');
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
