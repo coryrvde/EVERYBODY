@@ -17,8 +17,14 @@ import HomeScreen from './app/screens/HomeScreen';
 import ChildProfileScreen from './app/screens/ChildProfileScreen';
 import ParentalControlScreen from './app/screens/ParentalControlScreen';
 import ConversationHistoryScreen from './app/screens/ConversationHistoryScreen';
+<<<<<<< HEAD
 import LocationTrackingScreen from './app/screens/LocationTrackingScreen';
 import ContentBlockingScreen from './app/screens/ContentBlockingScreen';
+=======
+import SettingsScreen from './app/screens/Setting';
+import AppAppearanceScreen from './app/screens/AppAppearanceScreen';
+
+>>>>>>> a26fad9984fc5c82e9d6958dd88029fbef2d04e6
 
 
 
@@ -51,7 +57,7 @@ function MyTabs() {
         ),
       }}
       />
-      <Tab.Screen name="Settings" component={HomeScreen}
+      <Tab.Screen name="Settings" component={SettingsScreen}
       options={{
         tabBarIcon: ({ color, size }) => (
           <SimpleLineIcons name="settings" size={size} color={color} />
@@ -60,6 +66,7 @@ function MyTabs() {
       />
     </Tab.Navigator>
   );
+
 }
 
 function RootStack(){
@@ -70,9 +77,14 @@ function RootStack(){
     <Stack.Screen name="Login" component={LoginScreen}/>
     <Stack.Screen name="SignUp" component={SignUpScreen}/>
     <Stack.Screen name="Details" component={Details}/>
+<<<<<<< HEAD
     <Stack.Screen name="Child Profiles" component={ChildProfileScreen}/>
     <Stack.Screen name="Location Tracking" component={LocationTrackingScreen}/>
     <Stack.Screen name="Content Blocking" component={ContentBlockingScreen}/>
+=======
+    <Stack.Screen name="Child Profiles" component={ChildProfile}/>
+    <Stack.Screen name="App Appearance" component={AppAppearanceScreen}/>
+>>>>>>> a26fad9984fc5c82e9d6958dd88029fbef2d04e6
   </Stack.Navigator>
   );
 }

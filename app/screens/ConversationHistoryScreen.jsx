@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   View, 
@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   ScrollView,
   StatusBar,
-  TextInput
+  TextInput,
+  Alert
 } from 'react-native';
 import { 
   Search, 
@@ -17,12 +18,117 @@ import {
   Clock,
   ChevronRight,
   TrendingUp,
-  Shield
+  Shield,
+  Bot,
+  Activity
 } from 'lucide-react-native';
+import AIContentDetector from '../services/aiContentDetector';
+import RealTimeMonitor from '../services/realTimeMonitor';
+import TelegramMonitor from '../services/telegramMonitor';
+import { AIMonitoringConfig, getSeverityColor, getSeverityBackground } from '../config/aiMonitoringConfig';
 
 export default function ConversationHistoryScreen() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiMonitoringStatus, setAiMonitoringStatus] = useState({
+    enabled: true,
+    realTimeAnalysis: true,
+    lastAnalysis: null
+  });
+  const [realTimeAlerts, setRealTimeAlerts] = useState([]);
+  const [telegramMonitoringStatus, setTelegramMonitoringStatus] = useState({
+    enabled: true,
+    active: false
+  });
+
+  // Initialize AI monitoring
+  useEffect(() => {
+    initializeAIMonitoring();
+    initializeTelegramMonitoring();
+    return () => {
+      RealTimeMonitor.stopMonitoring();
+      TelegramMonitor.stopTelegramMonitoring();
+    };
+  }, []);
+
+  const initializeAIMonitoring = async () => {
+    try {
+      // Start real-time monitoring
+      await RealTimeMonitor.startMonitoring('olivia');
+      
+      // Set up alert callback
+      RealTimeMonitor.addAlertCallback((alert) => {
+        setRealTimeAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
+        showAlertNotification(alert);
+      });
+      
+      // Update monitoring status
+      setAiMonitoringStatus(prev => ({
+        ...prev,
+        lastAnalysis: new Date().toISOString()
+      }));
+      
+    } catch (error) {
+      console.error('Error initializing AI monitoring:', error);
+    }
+  };
+
+  const initializeTelegramMonitoring = async () => {
+    try {
+      // Start Telegram monitoring
+      await TelegramMonitor.startTelegramMonitoring('olivia');
+      
+      // Set up Telegram alert callback
+      TelegramMonitor.addAlertCallback((alert) => {
+        setRealTimeAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
+        showAlertNotification(alert);
+      });
+      
+      // Update Telegram monitoring status
+      setTelegramMonitoringStatus(prev => ({
+        ...prev,
+        active: true
+      }));
+      
+    } catch (error) {
+      console.error('Error initializing Telegram monitoring:', error);
+    }
+  };
+
+  const showAlertNotification = (alert) => {
+    Alert.alert(
+      '🚨 Guardian AI Alert',
+      `${alert.app}: ${alert.flaggedContent}`,
+      [
+        { text: 'View Details', onPress: () => handleViewAlertDetails(alert) },
+        { text: 'Dismiss', style: 'cancel' }
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleViewAlertDetails = (alert) => {
+    console.log('Viewing alert details:', alert);
+    // Navigate to detailed alert view
+  };
+
+  const testAIAnalysis = async () => {
+    try {
+      const testText = "Want to smoke some greens tonight? I got some bud";
+      const analysis = await AIContentDetector.analyzeText(testText, {
+        app: 'Test App',
+        contact: 'Test Contact'
+      });
+      
+      Alert.alert(
+        'AI Analysis Test',
+        `Flagged: ${analysis.flagged}\nSeverity: ${analysis.severity}\nConfidence: ${Math.round(analysis.confidence * 100)}%\nPhrases: ${analysis.flaggedPhrases.join(', ')}\nContext: ${analysis.analysis?.reasons?.join(', ') || 'None'}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error testing AI analysis:', error);
+    }
+  };
 
   // Sample data - in production, this would come from your monitoring service
   const conversationLogs = [
@@ -85,13 +191,25 @@ export default function ConversationHistoryScreen() {
       flaggedWords: ['personal information'],
       messageCount: 5,
       date: '2 days ago'
+    },
+    {
+      id: 6,
+      app: 'Telegram',
+      contact: 'Unknown Contact',
+      timestamp: '2 days ago',
+      severity: 'high',
+      flaggedContent: 'Inappropriate content detected',
+      preview: 'Hey, want to see some...',
+      flaggedWords: ['inappropriate content', 'explicit material'],
+      messageCount: 20,
+      date: '2 days ago'
     }
   ];
 
   const stats = {
-    totalFlags: 47,
-    thisWeek: 12,
-    highRisk: 8
+    totalFlags: 55,
+    thisWeek: 15,
+    highRisk: 10
   };
 
   const getSeverityColor = (severity) => {
@@ -163,6 +281,58 @@ export default function ConversationHistoryScreen() {
           <Text style={[styles.statLabel, styles.statLabelDark]}>High Risk</Text>
         </View>
       </ScrollView>
+
+      {/* AI Monitoring Status */}
+      <View style={styles.aiMonitoringContainer}>
+        <View style={styles.aiStatusCard}>
+          <View style={styles.aiStatusHeader}>
+            <Bot size={20} color="#6366F1" strokeWidth={2} />
+            <Text style={styles.aiStatusTitle}>AI Monitoring</Text>
+            <View style={[styles.statusIndicator, { backgroundColor: aiMonitoringStatus.enabled ? '#10B981' : '#EF4444' }]} />
+          </View>
+          <Text style={styles.aiStatusText}>
+            {aiMonitoringStatus.enabled ? 'Active' : 'Inactive'} • Real-time Analysis
+          </Text>
+          <TouchableOpacity style={styles.testButton} onPress={testAIAnalysis}>
+            <Activity size={16} color="#6366F1" strokeWidth={2} />
+            <Text style={styles.testButtonText}>Test AI</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.aiStatusCard}>
+          <View style={styles.aiStatusHeader}>
+            <MessageCircle size={20} color="#0088CC" strokeWidth={2} />
+            <Text style={styles.aiStatusTitle}>Telegram Monitor</Text>
+            <View style={[styles.statusIndicator, { backgroundColor: telegramMonitoringStatus.active ? '#10B981' : '#EF4444' }]} />
+          </View>
+          <Text style={styles.aiStatusText}>
+            {telegramMonitoringStatus.active ? 'Active' : 'Inactive'} • Drug Slang Detection
+          </Text>
+          <Text style={styles.telegramFeatures}>
+            • "greens" + "smoke" detection{'\n'}
+            • Contextual pattern analysis{'\n'}
+            • Real-time conversation monitoring
+          </Text>
+        </View>
+        
+        {realTimeAlerts.length > 0 && (
+          <View style={styles.realTimeAlertsContainer}>
+            <Text style={styles.alertsTitle}>Recent AI Alerts</Text>
+            {realTimeAlerts.slice(0, 3).map((alert, index) => (
+              <View key={alert.id} style={styles.alertItem}>
+                <View style={[styles.alertSeverity, { backgroundColor: getSeverityColor(alert.severity) }]} />
+                <View style={styles.alertContent}>
+                  <Text style={styles.alertApp}>{alert.app}</Text>
+                  <Text style={styles.alertMessage} numberOfLines={1}>{alert.flaggedContent}</Text>
+                </View>
+                <Text style={styles.alertTime}>
+                  {new Date(alert.timestamp).toLocaleTimeString()}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
 
       {/* Search and Filter */}
       <View style={styles.searchFilterContainer}>
@@ -546,5 +716,111 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 24,
+  },
+  // AI Monitoring Styles
+  aiMonitoringContainer: {
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
+  aiStatusCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  aiStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  aiStatusTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginLeft: 8,
+    flex: 1,
+  },
+  statusIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  aiStatusText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 12,
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  testButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6366F1',
+    marginLeft: 6,
+  },
+  telegramFeatures: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 8,
+    lineHeight: 16,
+  },
+  realTimeAlertsContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  alertsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  alertItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  alertSeverity: {
+    width: 4,
+    height: 32,
+    borderRadius: 2,
+    marginRight: 12,
+  },
+  alertContent: {
+    flex: 1,
+  },
+  alertApp: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  alertMessage: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  alertTime: {
+    fontSize: 11,
+    color: '#9E9E9E',
+    fontWeight: '500',
   },
 });
