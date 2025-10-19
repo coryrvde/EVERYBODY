@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { 
   Search, 
   Filter, 
@@ -26,9 +27,12 @@ import AIContentDetector from '../services/aiContentDetector';
 import { supabase } from '../supabase';
 import RealTimeMonitor from '../services/realTimeMonitor';
 import TelegramMonitor from '../services/telegramMonitor';
+import { realTimeAIMonitor } from '../services/realTimeAIMonitor';
+import { smartAIAnalyzer } from '../services/smartAIAnalyzer';
 import { AIMonitoringConfig, getSeverityColor, getSeverityBackground } from '../config/aiMonitoringConfig';
 
 export default function ConversationHistoryScreen() {
+  const navigation = useNavigation();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [aiMonitoringStatus, setAiMonitoringStatus] = useState({
@@ -49,7 +53,7 @@ export default function ConversationHistoryScreen() {
       if (!session?.user) {
         return;
       }
-      initializeAIMonitoring();
+      await initializeSmartAIMonitoring(session.user.id);
       initializeTelegramMonitoring();
     })();
     return () => {
@@ -58,25 +62,94 @@ export default function ConversationHistoryScreen() {
     };
   }, []);
 
-  const initializeAIMonitoring = async () => {
+  const initializeSmartAIMonitoring = async (parentId) => {
     try {
-      // Start real-time monitoring
-      await RealTimeMonitor.startMonitoring('olivia');
+      console.log('Initializing Smart AI Monitoring for parent:', parentId);
       
-      // Set up alert callback
-      RealTimeMonitor.addAlertCallback((alert) => {
-        setRealTimeAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
-        showAlertNotification(alert);
-      });
+      // Get children for this parent
+      const { data: children, error } = await supabase
+        .from('family_links')
+        .select('child_id')
+        .eq('parent_id', parentId);
+
+      if (error) throw error;
+
+      // Start monitoring for each child
+      for (const child of children || []) {
+        await realTimeAIMonitor.startMonitoring(child.child_id, parentId);
+      }
+
+      // Set up real-time alerts subscription
+      await setupRealtimeAlertsSubscription(parentId);
       
       // Update monitoring status
       setAiMonitoringStatus(prev => ({
         ...prev,
+        enabled: true,
+        realTimeAnalysis: true,
         lastAnalysis: new Date().toISOString()
       }));
       
+      console.log('Smart AI Monitoring initialized successfully');
+      
     } catch (error) {
-      console.error('Error initializing AI monitoring:', error);
+      console.error('Error initializing Smart AI monitoring:', error);
+    }
+  };
+
+  const setupRealtimeAlertsSubscription = async (parentId) => {
+    try {
+      // Subscribe to real-time alerts
+      const alertsChannel = supabase
+        .channel(`ai_alerts_${parentId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'real_time_alerts',
+          filter: `parent_id=eq.${parentId}`
+        }, async (payload) => {
+          console.log('New AI alert received:', payload.new);
+          const alert = payload.new;
+          
+          // Add to real-time alerts state
+          setRealTimeAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
+          
+          // Show notification
+          showSmartAlertNotification(alert);
+        })
+        .subscribe();
+
+      console.log('Real-time alerts subscription set up');
+      
+    } catch (error) {
+      console.error('Error setting up alerts subscription:', error);
+    }
+  };
+
+  const showSmartAlertNotification = (alert) => {
+    Alert.alert(
+      `🚨 AI Alert - ${alert.severity.toUpperCase()}`,
+      `${alert.app_name}: ${alert.flagged_content}\n\nAI Analysis: ${alert.ai_reasoning || 'Content flagged by AI'}\nConfidence: ${Math.round((alert.confidence || 0.8) * 100)}%`,
+      [
+        { text: 'View Details', onPress: () => handleViewAlertDetails(alert) },
+        { text: 'Acknowledge', onPress: () => acknowledgeAlert(alert.id) },
+        { text: 'Dismiss', style: 'cancel' }
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const acknowledgeAlert = async (alertId) => {
+    try {
+      const { error } = await supabase
+        .from('real_time_alerts')
+        .update({ is_acknowledged: true, acknowledged_at: new Date().toISOString() })
+        .eq('id', alertId);
+
+      if (error) throw error;
+      console.log('Alert acknowledged');
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
     }
   };
 
@@ -119,22 +192,9 @@ export default function ConversationHistoryScreen() {
     // Navigate to detailed alert view
   };
 
-  const testAIAnalysis = async () => {
-    try {
-      const testText = "Want to smoke some greens tonight? I got some bud";
-      const analysis = await AIContentDetector.analyzeText(testText, {
-        app: 'Test App',
-        contact: 'Test Contact'
-      });
-      
-      Alert.alert(
-        'AI Analysis Test',
-        `Flagged: ${analysis.flagged}\nSeverity: ${analysis.severity}\nConfidence: ${Math.round(analysis.confidence * 100)}%\nPhrases: ${analysis.flaggedPhrases.join(', ')}\nContext: ${analysis.analysis?.reasons?.join(', ') || 'None'}`,
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Error testing AI analysis:', error);
-    }
+  const testSmartAIAnalysis = () => {
+    // Navigate to the AI Monitoring screen instead of showing a test alert
+    navigation.navigate('AI Monitoring');
   };
 
   // Sample data - in production, this would come from your monitoring service
@@ -300,9 +360,9 @@ export default function ConversationHistoryScreen() {
           <Text style={styles.aiStatusText}>
             {aiMonitoringStatus.enabled ? 'Active' : 'Inactive'} • Real-time Analysis
           </Text>
-          <TouchableOpacity style={styles.testButton} onPress={testAIAnalysis}>
+          <TouchableOpacity style={styles.testButton} onPress={testSmartAIAnalysis}>
             <Activity size={16} color="#6366F1" strokeWidth={2} />
-            <Text style={styles.testButtonText}>Test AI</Text>
+            <Text style={styles.testButtonText}>Open AI Monitoring</Text>
           </TouchableOpacity>
         </View>
         

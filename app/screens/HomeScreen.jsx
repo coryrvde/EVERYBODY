@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
 import { guardianClient } from '../api/guardian-client';
+import { notificationService } from '../services/notificationService';
+import { realTimeAIMonitor } from '../services/realTimeAIMonitor';
 import { 
   Users, 
   Activity, 
@@ -23,6 +25,9 @@ export default function HomeScreen() {
   const [alerts, setAlerts] = useState([]);
   const [guardianId, setGuardianId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [realTimeAlerts, setRealTimeAlerts] = useState([]);
+  const [unreadAlertCount, setUnreadAlertCount] = useState(0);
+  const [highPriorityAlerts, setHighPriorityAlerts] = useState(0);
 
   // Sample data for the chart
   const chartData = [
@@ -46,6 +51,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (guardianId) {
       setupRealtimeAlerts();
+      setupRealTimeNotifications();
     }
   }, [guardianId]);
 
@@ -116,6 +122,88 @@ export default function HomeScreen() {
     return () => {
       supabase.removeChannel(channel);
     };
+  }
+
+  async function setupRealTimeNotifications() {
+    try {
+      console.log('Setting up real-time notifications for guardian:', guardianId);
+      
+      // Start notification service
+      await notificationService.startNotifications(guardianId);
+      
+      // Add notification callback
+      notificationService.addNotificationCallback(guardianId, (alert) => {
+        console.log('Real-time notification received:', alert);
+        
+        // Update real-time alerts state
+        setRealTimeAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
+        
+        // Update alert counts
+        updateAlertCounts();
+        
+        // Show notification
+        showRealTimeNotification(alert);
+      });
+      
+      // Load initial alert counts
+      await updateAlertCounts();
+      
+      // Load recent alerts
+      await loadRecentAlerts();
+      
+    } catch (error) {
+      console.error('Error setting up real-time notifications:', error);
+    }
+  }
+
+  async function updateAlertCounts() {
+    try {
+      const unreadCount = await notificationService.getUnreadAlertCount(guardianId);
+      const highPriorityCount = await notificationService.getHighPriorityAlertCount(guardianId);
+      
+      setUnreadAlertCount(unreadCount);
+      setHighPriorityAlerts(highPriorityCount);
+    } catch (error) {
+      console.error('Error updating alert counts:', error);
+    }
+  }
+
+  async function loadRecentAlerts() {
+    try {
+      const recentAlerts = await notificationService.getRecentAlerts(guardianId, 10);
+      setRealTimeAlerts(recentAlerts);
+    } catch (error) {
+      console.error('Error loading recent alerts:', error);
+    }
+  }
+
+  function showRealTimeNotification(alert) {
+    Alert.alert(
+      `🚨 ${alert.severity.toUpperCase()} Alert`,
+      `${alert.app_name}: ${alert.flagged_content}\n\nAI Analysis: ${alert.ai_reasoning}\nConfidence: ${Math.round((alert.confidence || 0.8) * 100)}%`,
+      [
+        { text: 'View Details', onPress: () => handleViewAlert(alert) },
+        { text: 'Acknowledge', onPress: () => handleAcknowledgeAlert(alert.id) },
+        { text: 'Dismiss', style: 'cancel' }
+      ],
+      { cancelable: true }
+    );
+  }
+
+  function handleViewAlert(alert) {
+    console.log('Viewing alert details:', alert);
+    // Navigate to detailed alert view or conversation history
+    navigation.navigate('Conversation History');
+  }
+
+  async function handleAcknowledgeAlert(alertId) {
+    try {
+      await notificationService.markAlertAsAcknowledged(alertId);
+      await updateAlertCounts();
+      console.log('Alert acknowledged');
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
+    }
   }
 
   const handleNavigation = (tab) => {
@@ -271,6 +359,17 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.actionTitle}>Content Block</Text>
               <Text style={styles.actionSubtitle}>Block apps/sites</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('AI Monitoring')}
+            >
+              <View style={styles.actionIcon}>
+                <Text style={{ fontSize: 28 }}>🧠</Text>
+              </View>
+              <Text style={styles.actionTitle}>AI Monitoring</Text>
+              <Text style={styles.actionSubtitle}>Smart detection</Text>
             </TouchableOpacity>
           </View>
         </View>
