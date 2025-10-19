@@ -62,15 +62,17 @@ export default function ParentalControlScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarRing}>
-              <View style={styles.avatar}>
-                <View style={styles.avatarFace} />
+          <View style={styles.profileBackground}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatarRing}>
+                <View style={styles.avatar}>
+                  <View style={styles.avatarFace} />
+                </View>
               </View>
             </View>
+            <Text style={styles.childName}>{childName}</Text>
+            <Text style={styles.lastActive}>{lastActive}</Text>
           </View>
-          <Text style={styles.childName}>{childName}</Text>
-          <Text style={styles.lastActive}>{lastActive}</Text>
         </View>
 
         {/* Action Buttons */}
@@ -107,7 +109,7 @@ export default function ParentalControlScreen() {
               <Text style={styles.featureSubtext}>{blockedWebsites} Websites</Text>
             </View>
             <View style={styles.featureIconContainer}>
-              <Globe size={32} color="#4A90E2" strokeWidth={2} />
+              <Globe size={32} color="#ffffffff" strokeWidth={2} />
             </View>
           </TouchableOpacity>
 
@@ -161,7 +163,7 @@ export default function ParentalControlScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: '#E6F0FA',
   },
   header: {
     flexDirection: 'row',
@@ -196,6 +198,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     backgroundColor: '#FFF',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: '#2B6CB0',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    marginBottom: 8,
+  },
+  profileBackground: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(43, 108, 176, 0.05)',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(43, 108, 176, 0.1)',
   },
   avatarContainer: {
     marginBottom: 12,
@@ -270,7 +292,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   blockAppsCard: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#a510a5b4',
     width: '48%',
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -297,7 +319,7 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#ffffffff',
   },
   featureTitleWhite: {
     fontSize: 16,
@@ -306,7 +328,7 @@ const styles = StyleSheet.create({
   },
   featureSubtext: {
     fontSize: 12,
-    color: '#E57373',
+    color: '#ffffffff',
     marginTop: 4,
   },
   featureSubtextWhite: {

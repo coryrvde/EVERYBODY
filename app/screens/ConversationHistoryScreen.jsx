@@ -288,13 +288,13 @@ export default function ConversationHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FE',
+    backgroundColor: '#E3F2FD',
   },
   header: {
     backgroundColor: '#6366F1',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 24,
+    paddingBottom: 40,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    marginTop: -40,
+    marginTop: -56,
   },
   statCard: {
     borderRadius: 16,
