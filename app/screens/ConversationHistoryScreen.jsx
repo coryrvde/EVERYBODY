@@ -24,6 +24,7 @@ import {
 } from 'lucide-react-native';
 import AIContentDetector from '../services/aiContentDetector';
 import RealTimeMonitor from '../services/realTimeMonitor';
+import TelegramMonitor from '../services/telegramMonitor';
 import { AIMonitoringConfig, getSeverityColor, getSeverityBackground } from '../config/aiMonitoringConfig';
 
 export default function ConversationHistoryScreen() {
@@ -35,12 +36,18 @@ export default function ConversationHistoryScreen() {
     lastAnalysis: null
   });
   const [realTimeAlerts, setRealTimeAlerts] = useState([]);
+  const [telegramMonitoringStatus, setTelegramMonitoringStatus] = useState({
+    enabled: true,
+    active: false
+  });
 
   // Initialize AI monitoring
   useEffect(() => {
     initializeAIMonitoring();
+    initializeTelegramMonitoring();
     return () => {
       RealTimeMonitor.stopMonitoring();
+      TelegramMonitor.stopTelegramMonitoring();
     };
   }, []);
 
@@ -63,6 +70,28 @@ export default function ConversationHistoryScreen() {
       
     } catch (error) {
       console.error('Error initializing AI monitoring:', error);
+    }
+  };
+
+  const initializeTelegramMonitoring = async () => {
+    try {
+      // Start Telegram monitoring
+      await TelegramMonitor.startTelegramMonitoring('olivia');
+      
+      // Set up Telegram alert callback
+      TelegramMonitor.addAlertCallback((alert) => {
+        setRealTimeAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
+        showAlertNotification(alert);
+      });
+      
+      // Update Telegram monitoring status
+      setTelegramMonitoringStatus(prev => ({
+        ...prev,
+        active: true
+      }));
+      
+    } catch (error) {
+      console.error('Error initializing Telegram monitoring:', error);
     }
   };
 
@@ -292,6 +321,22 @@ export default function ConversationHistoryScreen() {
             <Activity size={16} color="#6366F1" strokeWidth={2} />
             <Text style={styles.testButtonText}>Test AI</Text>
           </TouchableOpacity>
+        </View>
+        
+        <View style={styles.aiStatusCard}>
+          <View style={styles.aiStatusHeader}>
+            <MessageCircle size={20} color="#0088CC" strokeWidth={2} />
+            <Text style={styles.aiStatusTitle}>Telegram Monitor</Text>
+            <View style={[styles.statusIndicator, { backgroundColor: telegramMonitoringStatus.active ? '#10B981' : '#EF4444' }]} />
+          </View>
+          <Text style={styles.aiStatusText}>
+            {telegramMonitoringStatus.active ? 'Active' : 'Inactive'} • Drug Slang Detection
+          </Text>
+          <Text style={styles.telegramFeatures}>
+            • "greens" + "smoke" detection{'\n'}
+            • Contextual pattern analysis{'\n'}
+            • Real-time conversation monitoring
+          </Text>
         </View>
         
         {realTimeAlerts.length > 0 && (
@@ -748,6 +793,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6366F1',
     marginLeft: 6,
+  },
+  telegramFeatures: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 8,
+    lineHeight: 16,
   },
   realTimeAlertsContainer: {
     backgroundColor: '#FFF',
