@@ -46,8 +46,8 @@ export default function SignUpScreen() {
       }
 
       if (data.user) {
-        Alert.alert('Success', 'Account created successfully! Please check your email to verify your account.');
-        navigation.navigate('Login');
+        Alert.alert('Success', 'Account created! Choose your role to continue.');
+        navigation.navigate('Role Selection');
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');

@@ -125,11 +125,24 @@ class RealTimeMonitor {
       // Check for new messages in the last 30 seconds
       const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
       
-      const { data: messages, error } = await supabase
+      // Some environments may not have a "timestamp" column; fallback to created_at
+      let query = supabase
         .from('monitored_messages')
         .select('*')
-        .gte('timestamp', thirtySecondsAgo)
         .eq('child_id', this.childId);
+
+      // Try filtering by timestamp first
+      let { data: messages, error } = await query.gte('timestamp', thirtySecondsAgo);
+      if (error && (error.code === '42703' || /column .*timestamp .* does not exist/i.test(error.message))) {
+        // Retry using created_at if timestamp doesn't exist
+        const retry = await supabase
+          .from('monitored_messages')
+          .select('*')
+          .gte('created_at', thirtySecondsAgo)
+          .eq('child_id', this.childId);
+        messages = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         console.error('Error fetching recent messages:', error);

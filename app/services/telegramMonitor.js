@@ -456,11 +456,22 @@ class TelegramMonitor {
       // Check for new messages in the last 30 seconds
       const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
       
-      const { data: messages, error } = await supabase
+      // Some environments may use created_at instead of message_date
+      let { data: messages, error } = await supabase
         .from('telegram_messages')
         .select('*')
         .eq('child_id', this.childId)
         .gte('message_date', thirtySecondsAgo);
+
+      if (error && (error.code === '42703' || /column .*message_date .* does not exist/i.test(error.message))) {
+        const retry = await supabase
+          .from('telegram_messages')
+          .select('*')
+          .eq('child_id', this.childId)
+          .gte('created_at', thirtySecondsAgo);
+        messages = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         console.error('Error fetching recent Telegram messages:', error);

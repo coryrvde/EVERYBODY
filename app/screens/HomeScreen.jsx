@@ -39,15 +39,35 @@ export default function HomeScreen() {
 
   async function initializeData() {
     try {
-      // Get current user to find guardian ID
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) throw error;
+      // Prefer session to avoid AuthSessionMissingError in dev
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.warn('Auth session error:', sessionError);
+      }
+
+      const user = sessionData?.session?.user || null;
+
+      // Fallback to getUser if session absent (may warn in dev)
+      if (!user) {
+        const { data: { user: fallbackUser }, error: userError } = await supabase.auth.getUser();
+        if (userError) {
+          console.warn('Auth getUser error:', userError);
+        }
+        if (fallbackUser) {
+          setGuardianId(fallbackUser.id);
+          await loadAlerts(fallbackUser.id);
+          return;
+        }
+      }
 
       if (user) {
         // For now, we'll use the user ID as guardian ID
         // In a real app, you'd have a mapping table
         setGuardianId(user.id);
         await loadAlerts(user.id);
+      } else {
+        // No session/user yet: skip alerts load to avoid noisy errors
+        console.warn('Auth session missing - skipping alerts load');
       }
     } catch (error) {
       console.error('Error initializing data:', error);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { supabase } from '../supabase';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -10,10 +11,34 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation();
 
-  const handleLogin = () => {
-    console.log('Login with:', { email, password, rememberMe });
-    alert('SLogin successful.');
-    navigation.navigate('Home')
+  const handleLogin = async () => {
+    try {
+      console.log('Login with:', { email, password, rememberMe });
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Login failed:', error.message);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No active session found');
+        return;
+      }
+
+      if (rememberMe) {
+        await supabase.auth.setSession(session);
+      }
+
+      navigation.navigate('Main');
+    } catch (e) {
+      console.error('Unexpected login error:', e);
+    }
   };
 
   const handleRecoverPassword = () => {

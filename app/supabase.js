@@ -7,10 +7,10 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // Create Supabase client with proper configuration
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Disable automatic session refresh for development
-    autoRefreshToken: false,
-    persistSession: false,
-    detectSessionInUrl: false
+    // Enable persistence to avoid AuthSessionMissingError
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
   },
   db: {
     schema: 'public'

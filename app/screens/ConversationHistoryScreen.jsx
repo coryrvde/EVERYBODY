@@ -23,6 +23,7 @@ import {
   Activity
 } from 'lucide-react-native';
 import AIContentDetector from '../services/aiContentDetector';
+import { supabase } from '../supabase';
 import RealTimeMonitor from '../services/realTimeMonitor';
 import TelegramMonitor from '../services/telegramMonitor';
 import { AIMonitoringConfig, getSeverityColor, getSeverityBackground } from '../config/aiMonitoringConfig';
@@ -41,10 +42,16 @@ export default function ConversationHistoryScreen() {
     active: false
   });
 
-  // Initialize AI monitoring
+  // Initialize AI monitoring when logged in
   useEffect(() => {
-    initializeAIMonitoring();
-    initializeTelegramMonitoring();
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        return;
+      }
+      initializeAIMonitoring();
+      initializeTelegramMonitoring();
+    })();
     return () => {
       RealTimeMonitor.stopMonitoring();
       TelegramMonitor.stopTelegramMonitoring();

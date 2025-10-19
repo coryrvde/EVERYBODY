@@ -22,6 +22,11 @@ import LocationTrackingScreen from './app/screens/LocationTrackingScreen';
 import ContentBlockingScreen from './app/screens/ContentBlockingScreen';
 import SettingsScreen from './app/screens/Setting';
 // import AppAppearanceScreen from './app/screens/AppAppearanceScreen';
+import RoleSelectionScreen from './app/screens/RoleSelectionScreen';
+import LinkChildScreen from './app/screens/LinkChildScreen';
+import JoinFamilyScreen from './app/screens/JoinFamilyScreen';
+import ChildQRScreen from './app/screens/ChildQRScreen';
+import ParentScanScreen from './app/screens/ParentScanScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -68,13 +73,18 @@ function RootStack(){
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>
     <Stack.Screen name="Onboarding" component={OnboardingScreen}/>
-    <Stack.Screen name="Home" component={MyTabs}/>
+    <Stack.Screen name="Main" component={MyTabs}/>
     <Stack.Screen name="Login" component={LoginScreen}/>
     <Stack.Screen name="SignUp" component={SignUpScreen}/>
     <Stack.Screen name="Details" component={Details}/>
     <Stack.Screen name="Child Profiles" component={ChildProfileScreen}/>
     <Stack.Screen name="Location Tracking" component={LocationTrackingScreen}/>
     <Stack.Screen name="Content Blocking" component={ContentBlockingScreen}/>
+    <Stack.Screen name="Role Selection" component={RoleSelectionScreen}/>
+    <Stack.Screen name="LinkChild" component={LinkChildScreen}/>
+    <Stack.Screen name="JoinFamily" component={JoinFamilyScreen}/>
+    <Stack.Screen name="ChildQR" component={ChildQRScreen}/>
+    <Stack.Screen name="ParentScan" component={ParentScanScreen}/>
     {/* <Stack.Screen name="App Appearance" component={AppAppearanceScreen}/> */}
   </Stack.Navigator>
   );
