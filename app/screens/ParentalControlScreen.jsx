@@ -5,10 +5,10 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView,
-  SafeAreaView,
   StatusBar
 } from 'react-native';
 import { Camera, Lock, Pause, Clock, Globe, Grid, Shield, MapPin } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ParentalControlScreen() {
   const [childName] = useState('Olivia');
