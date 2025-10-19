@@ -50,7 +50,7 @@ export default function RoleSelectionScreen() {
               if (role === 'parent') {
                 navigation.navigate('Child Profiles');
               } else {
-                navigation.navigate('ChildQR');
+                navigation.navigate('ChildDashboard');
               }
             }
           }

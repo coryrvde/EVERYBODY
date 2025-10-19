@@ -8,34 +8,45 @@ import { useNavigation } from '@react-navigation/native';
 export default function ChildQRScreen() {
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const navigation = useNavigation();
+
+  const generateQRCode = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) {
+        Alert.alert('Not logged in', 'Please log in first.');
+        return;
+      }
+
+      // Minimal payload with type discriminator and a timestamp
+      const qrPayload = {
+        t: 'guardian-link',
+        childUserId: user.id,
+        ts: Date.now(),
+      };
+      setPayload(JSON.stringify(qrPayload));
+    } catch (e) {
+      console.error('Error preparing QR payload:', e);
+      Alert.alert('Error', 'Could not prepare QR code');
+    }
+  };
 
   useEffect(() => {
     (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) {
-          Alert.alert('Not logged in', 'Please log in first.');
-          // Optionally navigate to Login if available in stack
-          return;
-        }
-
-        // Minimal payload with type discriminator and a timestamp
-        const qrPayload = {
-          t: 'guardian-link',
-          childUserId: user.id,
-          ts: Date.now(),
-        };
-        setPayload(JSON.stringify(qrPayload));
-      } catch (e) {
-        console.error('Error preparing QR payload:', e);
-        Alert.alert('Error', 'Could not prepare QR code');
-      } finally {
-        setLoading(false);
-      }
+      setLoading(true);
+      await generateQRCode();
+      setLoading(false);
     })();
   }, []);
+
+  const handleRegenerateQR = async () => {
+    setRegenerating(true);
+    await generateQRCode();
+    setRegenerating(false);
+    Alert.alert('Success', 'New QR code generated!');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,14 +77,32 @@ export default function ChildQRScreen() {
             <Text style={styles.qrInstructions}>
               Keep this screen open while your parent scans the QR code
             </Text>
+            
+            <View style={styles.regenerateSection}>
+              <Text style={styles.regenerateTitle}>QR Code not working?</Text>
+              <Text style={styles.regenerateSubtext}>
+                If your parent can't scan this QR code, try generating a new one
+              </Text>
+              <TouchableOpacity 
+                style={[styles.regenerateButton, regenerating && styles.regenerateButtonDisabled]} 
+                onPress={handleRegenerateQR}
+                disabled={regenerating}
+              >
+                {regenerating ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.regenerateButtonText}>🔄 Generate New QR Code</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
         <TouchableOpacity 
           style={styles.backButton} 
-          onPress={() => navigation.navigate('Main')}
+          onPress={() => navigation.navigate('ChildDashboard')}
         >
-          <Text style={styles.backButtonText}>← Back to App</Text>
+          <Text style={styles.backButtonText}>← Back to Dashboard</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -165,6 +194,43 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   backButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  regenerateSection: {
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  regenerateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  regenerateSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 16,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  regenerateButton: {
+    backgroundColor: '#059669',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  regenerateButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  regenerateButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',

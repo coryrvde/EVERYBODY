@@ -37,6 +37,26 @@ export default function ParentScanScreen() {
         return;
       }
 
+      // Check if link already exists
+      const { data: existingLinks, error: checkError } = await supabase
+        .from('family_links')
+        .select('id')
+        .eq('parent_id', user.id)
+        .eq('child_id', parsed.childUserId)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      if (existingLinks && existingLinks.length > 0) {
+        Alert.alert('Already Linked', 'This child is already linked to your account', [
+          {
+            text: 'Go to Dashboard',
+            onPress: () => navigation.navigate('Main'),
+          },
+        ]);
+        return;
+      }
+
       // Create family link (parent -> child)
       const { error } = await supabase
         .from('family_links')
@@ -51,7 +71,18 @@ export default function ParentScanScreen() {
       ]);
     } catch (e) {
       console.error('Scan/link failed:', e);
-      Alert.alert('Error', 'Failed to link child');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to link child';
+      if (e.message && e.message.includes('duplicate key')) {
+        errorMessage = 'This child is already linked to your account';
+      } else if (e.message && e.message.includes('foreign key')) {
+        errorMessage = 'Invalid child account. Please ask the child to log in again.';
+      } else if (e.message && e.message.includes('permission')) {
+        errorMessage = 'Permission denied. Please make sure you are logged in as a parent.';
+      }
+      
+      Alert.alert('Error', errorMessage);
       setScanned(false);
     }
   };

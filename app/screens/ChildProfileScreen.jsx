@@ -1,43 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { supabase } from '../supabase';
 
 export default function ChildProfileScreen() {
   const navigation = useNavigation();
-  const [profiles, setProfiles] = useState([
-    { 
-      id: 1, 
-      name: 'Emma', 
-      age: 8, 
-      avatar: '👧', 
-      color: '#FDE1EC',
-      activities: [
-        { id: 1, platform: 'YouTube', action: 'Watched', content: 'DIY Crafts Tutorial', time: '2 hours ago', duration: '15 min' },
-        { id: 2, platform: 'Instagram', action: 'Browsed', content: 'Art & Drawing Posts', time: '4 hours ago', duration: '20 min' },
-        { id: 3, platform: 'Messenger', action: 'Messaged', content: 'Sarah K.', time: '5 hours ago', duration: '10 min' }
-      ],
-      conversations: [
-        { id: 1, platform: 'Messenger', contact: 'Sarah K.', lastMessage: 'See you at school tomorrow!', time: '5 hours ago', unread: 0 },
-        { id: 2, platform: 'Instagram', contact: 'Art Club Group', lastMessage: 'Emma shared a drawing', time: '1 day ago', unread: 2 }
-      ]
-    },
-    { 
-      id: 2, 
-      name: 'Jake', 
-      age: 12, 
-      avatar: '👦', 
-      color: '#DBEAFE',
-      activities: [
-        { id: 1, platform: 'YouTube', action: 'Watched', content: 'Minecraft Building Guide', time: '1 hour ago', duration: '25 min' },
-        { id: 2, platform: 'Twitter', action: 'Posted', content: 'Just beat level 50!', time: '3 hours ago', duration: '2 min' },
-        { id: 3, platform: 'Facebook', action: 'Commented', content: 'School Project Group', time: '6 hours ago', duration: '5 min' }
-      ],
-      conversations: [
-        { id: 1, platform: 'WhatsApp', contact: 'Gaming Squad', lastMessage: 'Anyone online for a match?', time: '2 hours ago', unread: 5 },
-        { id: 2, platform: 'Messenger', contact: 'Dad', lastMessage: 'Can I stay up until 9pm?', time: '3 hours ago', unread: 0 }
-      ]
-    }
-  ]);
+  const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('activities');
   const [isAdding, setIsAdding] = useState(false);
@@ -46,6 +15,57 @@ export default function ChildProfileScreen() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const avatars = ['👶', '👧', '👦', '🧒', '👨', '👩', '🧑'];
+
+  // Load linked children from database
+  useEffect(() => {
+    loadLinkedChildren();
+  }, []);
+
+  const loadLinkedChildren = async () => {
+    try {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+
+      // Get all children linked to this parent
+      const { data: links, error } = await supabase
+        .from('family_links')
+        .select(`
+          child_id,
+          created_at,
+          profiles!family_links_child_id_fkey (
+            id,
+            full_name,
+            created_at
+          )
+        `)
+        .eq('parent_id', user.id);
+
+      if (error) {
+        console.error('Error loading linked children:', error);
+        return;
+      }
+
+      // Transform the data to match the expected format
+      const childrenData = links?.map((link, index) => ({
+        id: link.child_id,
+        name: link.profiles?.full_name || 'Unknown Child',
+        age: 0, // We don't store age in profiles, could be added later
+        avatar: avatars[index % avatars.length],
+        color: ['#FDE1EC', '#DBEAFE', '#E9D5FF', '#D1FAE5', '#FEF3C7'][index % 5],
+        linkedAt: link.created_at,
+        activities: [], // Could be loaded separately if needed
+        conversations: [] // Could be loaded separately if needed
+      })) || [];
+
+      setProfiles(childrenData);
+    } catch (e) {
+      console.error('Error in loadLinkedChildren:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const platformColors = {
     Instagram: '#E1306C',
@@ -85,7 +105,56 @@ export default function ChildProfileScreen() {
     }
   };
 
+  const handleUnlinkChild = async (childId, childName) => {
+    Alert.alert(
+      'Unlink Child',
+      `Are you sure you want to unlink ${childName}? This will remove your monitoring access to their device.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Unlink',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              const user = session?.user;
+              if (!user) return;
+
+              // Remove the family link from database
+              const { error } = await supabase
+                .from('family_links')
+                .delete()
+                .eq('parent_id', user.id)
+                .eq('child_id', childId);
+
+              if (error) {
+                console.error('Error unlinking child:', error);
+                Alert.alert('Error', 'Failed to unlink child. Please try again.');
+                return;
+              }
+
+              // Update local state
+              setProfiles(profiles.filter(p => p.id !== childId));
+              if (selectedProfile?.id === childId) {
+                setSelectedProfile(null);
+              }
+
+              Alert.alert('Success', `${childName} has been unlinked successfully.`);
+            } catch (e) {
+              console.error('Error in handleUnlinkChild:', e);
+              Alert.alert('Error', 'Failed to unlink child. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleDelete = (id) => {
+    // This is now just for local state management if needed
     setProfiles(profiles.filter(p => p.id !== id));
     if (selectedProfile?.id === id) {
       setSelectedProfile(null);
@@ -247,28 +316,39 @@ export default function ChildProfileScreen() {
         </View>
 
         <View style={styles.profileList}>
-          {profiles.map(profile => (
-            <View key={profile.id} style={[styles.profileCard, { backgroundColor: profile.color }]}>
-              <View style={styles.profileCardContent}>
-                <Text style={styles.avatar}>{profile.avatar}</Text>
-                <View style={styles.profileInfo}>
-                  <Text style={styles.profileName}>{profile.name}</Text>
-                  <Text style={styles.ageText}>{profile.age} years old</Text>
-                  <TouchableOpacity onPress={() => viewProfile(profile)} style={styles.viewActivityButton}>
-                    <Text style={styles.viewActivityText}>📈 View Activity</Text>
+          {loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>Loading linked children...</Text>
+            </View>
+          ) : profiles.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No children linked yet</Text>
+              <Text style={styles.emptyStateSubtext}>Scan a child's QR code to link their device</Text>
+            </View>
+          ) : (
+            profiles.map(profile => (
+              <View key={profile.id} style={[styles.profileCard, { backgroundColor: profile.color }]}>
+                <View style={styles.profileCardContent}>
+                  <Text style={styles.avatar}>{profile.avatar}</Text>
+                  <View style={styles.profileInfo}>
+                    <Text style={styles.profileName}>{profile.name}</Text>
+                    <Text style={styles.ageText}>Linked {profile.linkedAt ? new Date(profile.linkedAt).toLocaleDateString() : 'Recently'}</Text>
+                    <TouchableOpacity onPress={() => viewProfile(profile)} style={styles.viewActivityButton}>
+                      <Text style={styles.viewActivityText}>📈 View Activity</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity onPress={() => startEdit(profile)} style={styles.editButton}>
+                    <Text style={styles.buttonEmoji}>✏️</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleUnlinkChild(profile.id, profile.name)} style={styles.unlinkButton}>
+                    <Text style={styles.buttonEmoji}>🔗</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-              <View style={styles.actionButtons}>
-                <TouchableOpacity onPress={() => startEdit(profile)} style={styles.editButton}>
-                  <Text style={styles.buttonEmoji}>✏️</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(profile.id)} style={styles.deleteButton}>
-                  <Text style={styles.buttonEmoji}>🗑️</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+            ))
+          )}
         </View>
 
         {(isAdding || editingId) && (
@@ -471,6 +551,22 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  unlinkButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
   buttonEmoji: {
     fontSize: 20,
   },
@@ -664,6 +760,12 @@ const styles = StyleSheet.create({
   emptyStateText: {
     color: '#6B7280',
     fontSize: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    color: '#9CA3AF',
+    fontSize: 14,
+    textAlign: 'center',
   },
   activityCard: {
     backgroundColor: '#FFFFFF',

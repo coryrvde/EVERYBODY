@@ -21,13 +21,14 @@ import ConversationHistoryScreen from './app/screens/ConversationHistoryScreen';
 
 import LocationTrackingScreen from './app/screens/LocationTrackingScreen';
 import ContentBlockingScreen from './app/screens/ContentBlockingScreen';
-import SettingsScreen from './app/screens/Setting';
+import SettingsScreen from './app/screens/SettingsScreen';
 // import AppAppearanceScreen from './app/screens/AppAppearanceScreen';
 import RoleSelectionScreen from './app/screens/RoleSelectionScreen';
 import LinkChildScreen from './app/screens/LinkChildScreen';
 import JoinFamilyScreen from './app/screens/JoinFamilyScreen';
 import ChildQRScreen from './app/screens/ChildQRScreen';
 import ParentScanScreen from './app/screens/ParentScanScreen';
+import ChildDashboardScreen from './app/screens/ChildDashboardScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -87,6 +88,7 @@ function RootStack(){
     <Stack.Screen name="JoinFamily" component={JoinFamilyScreen}/>
     <Stack.Screen name="ChildQR" component={ChildQRScreen}/>
     <Stack.Screen name="ParentScan" component={ParentScanScreen}/>
+    <Stack.Screen name="ChildDashboard" component={ChildDashboardScreen}/>
     {/* <Stack.Screen name="App Appearance" component={AppAppearanceScreen}/> */}
   </Stack.Navigator>
   );

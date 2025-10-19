@@ -59,10 +59,15 @@ export default function LoginScreen() {
           ]
         );
       } else {
-        // User has a role, go to main app
-        console.log('Role found:', profile.role, 'navigating to main');
+        // User has a role, navigate based on role
+        console.log('Role found:', profile.role, 'navigating based on role');
         Alert.alert('Welcome back!', `Signed in as ${profile.role}.`);
-        navigation.navigate('Main');
+        
+        if (profile.role === 'child') {
+          navigation.navigate('ChildDashboard');
+        } else {
+          navigation.navigate('Main');
+        }
       }
     } catch (e) {
       console.error('Unexpected login error:', e);
