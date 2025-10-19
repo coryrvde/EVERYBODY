@@ -144,7 +144,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#2D3748',
-    backgroundColor: '#EDF2F7',
   },
   icon: {
     fontSize: 20,
