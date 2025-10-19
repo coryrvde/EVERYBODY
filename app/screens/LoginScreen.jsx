@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { supabase } from '../supabase';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -11,53 +10,15 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) {
-        Alert.alert('Login Failed', error.message);
-        return;
-      }
-
-      if (data.user) {
-        Alert.alert('Success', 'Login successful!');
-        navigation.navigate('Home');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
-      console.error(error);
-    }
+  const handleLogin = () => {
+    console.log('Login with:', { email, password, rememberMe });
+    alert('SLogin successful.');
+    navigation.navigate('Home')
   };
 
-  const handleRecoverPassword = async () => {
-    if (!email) {
-      Alert.alert('Error', 'Please enter your email address first');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'yourapp://reset-password',
-      });
-
-      if (error) {
-        Alert.alert('Error', error.message);
-      } else {
-        Alert.alert('Success', 'Password recovery link sent to your email.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
-      console.error(error);
-    }
+  const handleRecoverPassword = () => {
+    console.log('Recover password for:', email);
+    alert('Password recovery link sent to your email.');
   };
 
   return (
@@ -143,7 +104,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#2B6CB0',
     textAlign: 'center',
     marginBottom: 40,
   },
@@ -151,24 +112,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 50,
   },
-  logo: {
+  logoPlaceholder: {
     width: 200,
     height: 200,
-    borderRadius: 20,
+    borderRadius: 100,
+    backgroundColor: '#2B6CB0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  logo: {
+    width: 180,
+    height: 180,
   },
   form: {
     marginBottom: 30,
   },
   label: {
     fontSize: 16,
-    color: '#000000',
+    color: '#2D3748',
     marginBottom: 8,
     marginTop: 16,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8E8E8',
+    backgroundColor: '#EDF2F7',
     borderRadius: 30,
     paddingHorizontal: 20,
     height: 56,
@@ -176,7 +149,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#000000',
+    color: '#2D3748',
+    backgroundColor: '#EDF2F7',
   },
   icon: {
     fontSize: 20,
@@ -196,13 +170,13 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 4,
-    backgroundColor: '#9E9E9E',
+    backgroundColor: '#EDF2F7',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
   },
   checkboxChecked: {
-    backgroundColor: '#6B6B6B',
+    backgroundColor: '#2B6CB0',
   },
   checkmark: {
     color: '#FFFFFF',
@@ -211,14 +185,14 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 14,
-    color: '#000000',
+    color: '#2D3748',
   },
   recoverText: {
     fontSize: 14,
-    color: '#000000',
+    color: '#2B6CB0',
   },
   button: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#4299E1',
     borderRadius: 30,
     height: 56,
     justifyContent: 'center',
@@ -232,7 +206,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     fontSize: 16,
-    color: '#666666',
+    color: '#2D3748',
     textAlign: 'center',
   },
 });

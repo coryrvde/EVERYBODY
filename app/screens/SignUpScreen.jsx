@@ -173,6 +173,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#000000',
+    backgroundColor: '#EDF2F7',
   },
   icon: {
     fontSize: 20,
@@ -191,4 +192,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
