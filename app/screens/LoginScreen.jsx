@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
@@ -35,7 +35,38 @@ export default function LoginScreen() {
         await supabase.auth.setSession(session);
       }
 
-      navigation.navigate('Main');
+      // Decide next screen based on whether the user has chosen a role
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) {
+          console.error('No user ID found after login');
+          navigation.navigate('Main');
+          return;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .single();
+
+        if (profileError) {
+          console.warn('Profile lookup failed, sending to Main:', profileError.message);
+          navigation.navigate('Main');
+          return;
+        }
+
+        if (!profile || !profile.role) {
+          navigation.navigate('Role Selection');
+          return;
+        }
+
+        navigation.navigate('Main');
+      } catch (routingError) {
+        console.warn('Post-login routing error, defaulting to Main:', routingError);
+        navigation.navigate('Main');
+      }
     } catch (e) {
       console.error('Unexpected login error:', e);
     }
@@ -44,6 +75,24 @@ export default function LoginScreen() {
   const handleRecoverPassword = () => {
     console.log('Recover password for:', email);
     alert('Password recovery link sent to your email.');
+  };
+
+  const handleResendConfirmation = async () => {
+    try {
+      if (!email) {
+        Alert.alert('Enter email', 'Please enter your email first.');
+        return;
+      }
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) {
+        Alert.alert('Resend failed', error.message);
+        return;
+      }
+      Alert.alert('Email sent', 'Check your inbox for the verification link.');
+    } catch (e) {
+      Alert.alert('Error', 'Could not resend verification email.');
+      console.error('Resend verification error:', e);
+    }
   };
 
   return (
@@ -108,6 +157,10 @@ export default function LoginScreen() {
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={handleResendConfirmation}>
+          <Text style={styles.secondaryButtonText}>Resend confirmation email</Text>
         </TouchableOpacity>
 
         <Text style={styles.footer}>Welcome to your safe space</Text>
@@ -227,6 +280,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  secondaryButtonText: {
+    color: '#2B6CB0',
+    fontSize: 16,
     fontWeight: '600',
   },
   footer: {
