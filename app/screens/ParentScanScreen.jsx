@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
 
 export default function ParentScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const navigation = useNavigation();
 
   useEffect(() => {
     (async () => {
@@ -41,7 +43,12 @@ export default function ParentScanScreen() {
         .insert({ parent_id: user.id, child_id: parsed.childUserId });
       if (error) throw error;
 
-      Alert.alert('Linked', 'Child device successfully linked');
+      Alert.alert('Linked', 'Child device successfully linked', [
+        {
+          text: 'Go to Dashboard',
+          onPress: () => navigation.navigate('Main'),
+        },
+      ]);
     } catch (e) {
       console.error('Scan/link failed:', e);
       Alert.alert('Error', 'Failed to link child');
