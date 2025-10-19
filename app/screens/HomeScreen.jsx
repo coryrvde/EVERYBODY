@@ -306,43 +306,24 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#E6F0FA',
   },
   scrollView: {
     flex: 1,
   },
   header: {
-    backgroundColor: '#0A1E4A',
+    backgroundColor: '#2B6CB0',
     paddingTop: 40,
     paddingBottom: 30,
     paddingHorizontal: 24,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   headerTitle: {
     fontSize: 42,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    flex: 1,
     textAlign: 'center',
-  },
-  logoutButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  logoutButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   content: {
     flex: 1,
@@ -355,7 +336,7 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontSize: 20,
-    color: '#333333',
+    color: '#2D3748',
     textAlign: 'center',
     lineHeight: 30,
   },
@@ -368,7 +349,7 @@ const styles = StyleSheet.create({
     top: -10,
     left: '50%',
     transform: [{ translateX: -40 }],
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#ECC94B',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
@@ -376,7 +357,7 @@ const styles = StyleSheet.create({
   },
   alertText: {
     fontSize: 14,
-    color: '#333333',
+    color: '#2D3748',
     fontWeight: '500',
   },
   chart: {
@@ -392,13 +373,13 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: 30,
-    backgroundColor: '#D0D0D0',
+    backgroundColor: '#4299E1',
     borderRadius: 4,
     marginBottom: 8,
   },
   barLabel: {
     fontSize: 11,
-    color: '#666666',
+    color: '#2D3748',
     textAlign: 'center',
   },
   buttonGrid: {
@@ -409,27 +390,29 @@ const styles = StyleSheet.create({
   },
   gridButton: {
     width: '48%',
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#EDF2F7',
     paddingVertical: 30,
     paddingHorizontal: 20,
     borderRadius: 20,
     marginBottom: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4299E1',
   },
   gridButtonText: {
     fontSize: 18,
-    color: '#333333',
+    color: '#2D3748',
     fontWeight: '500',
     textAlign: 'center',
   },
   bottomNav: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#2B6CB0',
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: '#4299E1',
   },
   navItem: {
     flex: 1,
@@ -445,109 +428,10 @@ const styles = StyleSheet.create({
   },
   navLabel: {
     fontSize: 10,
-    color: '#999999',
+    color: '#EDF2F7',
     fontWeight: '500',
   },
   navLabelActive: {
-    color: '#000000',
-  },
-  alertsSection: {
-    marginTop: 30,
-    marginBottom: 20,
-  },
-  alertsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  alertsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  alertsCount: {
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '500',
-  },
-  alertsList: {
-    maxHeight: 300,
-  },
-  alertItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  alertIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  alertIconText: {
-    fontSize: 18,
-  },
-  alertContent: {
-    flex: 1,
-  },
-  alertMessage: {
-    fontSize: 16,
-    color: '#333333',
-    marginBottom: 4,
-    lineHeight: 20,
-  },
-  alertTime: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  severityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  severityText: {
     color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  noAlertsContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    padding: 30,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  noAlertsText: {
-    fontSize: 18,
-    color: '#333333',
-    fontWeight: '500',
-    marginBottom: 5,
-  },
-  noAlertsSubtext: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
   },
 });
