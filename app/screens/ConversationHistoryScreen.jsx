@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    marginTop: -56,
+    marginTop: -30,
   },
   statCard: {
     borderRadius: 16,

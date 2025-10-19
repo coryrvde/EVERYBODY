@@ -14,9 +14,11 @@ import LoginScreen from './app/screens/LoginScreen';
 import SignUpScreen from './app/screens/SignUpScreen';
 import Details from './app/screens/Details';
 import HomeScreen from './app/screens/HomeScreen';
-import ChildProfile from './app/screens/ChildProfile';
+import ChildProfileScreen from './app/screens/ChildProfileScreen';
 import ParentalControlScreen from './app/screens/ParentalControlScreen';
 import ConversationHistoryScreen from './app/screens/ConversationHistoryScreen';
+import LocationTrackingScreen from './app/screens/LocationTrackingScreen';
+import ContentBlockingScreen from './app/screens/ContentBlockingScreen';
 
 
 
@@ -68,7 +70,9 @@ function RootStack(){
     <Stack.Screen name="Login" component={LoginScreen}/>
     <Stack.Screen name="SignUp" component={SignUpScreen}/>
     <Stack.Screen name="Details" component={Details}/>
-    <Stack.Screen name="Child Profiles" component={ChildProfile}/>
+    <Stack.Screen name="Child Profiles" component={ChildProfileScreen}/>
+    <Stack.Screen name="Location Tracking" component={LocationTrackingScreen}/>
+    <Stack.Screen name="Content Blocking" component={ContentBlockingScreen}/>
   </Stack.Navigator>
   );
 }

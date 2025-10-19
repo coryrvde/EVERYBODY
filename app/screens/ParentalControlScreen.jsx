@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Camera, Lock, Pause, Clock, Globe, Grid, Shield, MapPin } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
 export default function ParentalControlScreen() {
   const [childName] = useState('Olivia');
@@ -17,6 +18,7 @@ export default function ParentalControlScreen() {
   const [blockedWebsites] = useState(50);
   const [appsLimits] = useState(12);
   const [savedLocations] = useState(2);
+  const navigation = useNavigation();
 
   const handleLockPhone = () => {
     console.log('Lock phone pressed');
@@ -32,6 +34,7 @@ export default function ParentalControlScreen() {
 
   const handleBlockApps = () => {
     console.log('Block apps pressed');
+    navigation.navigate('Content Blocking');
   };
 
   const handleAppsLimits = () => {
@@ -44,6 +47,7 @@ export default function ParentalControlScreen() {
 
   const handleGPS = () => {
     console.log('GPS pressed');
+    navigation.navigate('Location Tracking');
   };
 
   return (
