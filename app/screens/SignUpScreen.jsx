@@ -46,8 +46,23 @@ export default function SignUpScreen() {
       }
 
       if (data.user) {
-        Alert.alert('Success', 'Account created! Choose your role to continue.');
-        navigation.navigate('Role Selection');
+        if (data.user.email_confirmed_at) {
+          // Email already confirmed, go to role selection
+          Alert.alert('Success', 'Account created! Choose your role to continue.');
+          navigation.navigate('Role Selection');
+        } else {
+          // Email needs verification
+          Alert.alert(
+            'Check Your Email', 
+            'We sent you a verification link. Please check your email and click the link to verify your account, then come back to sign in.',
+            [
+              {
+                text: 'OK',
+                onPress: () => navigation.navigate('Login')
+              }
+            ]
+          );
+        }
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');

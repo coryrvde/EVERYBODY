@@ -35,7 +35,20 @@ export default function LoginScreen() {
         await supabase.auth.setSession(session);
       }
 
-      navigation.navigate('Main');
+      // Check if user has a role set
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError || !profile?.role) {
+        // User doesn't have a role set, go to role selection
+        navigation.navigate('Role Selection');
+      } else {
+        // User has a role, go to main app
+        navigation.navigate('Main');
+      }
     } catch (e) {
       console.error('Unexpected login error:', e);
     }

@@ -9,8 +9,11 @@ export default function RoleSelectionScreen() {
 
   useEffect(() => {
     (async () => {
+      console.log('RoleSelectionScreen: Checking session...');
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('RoleSelectionScreen: Session found:', !!session?.user);
       if (!session?.user) {
+        console.log('RoleSelectionScreen: No session, navigating to Login');
         navigation.navigate('Login');
       }
     })();
@@ -18,16 +21,25 @@ export default function RoleSelectionScreen() {
 
   const setRole = async (role) => {
     try {
+      console.log('RoleSelectionScreen: Setting role to:', role);
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
       if (!user) {
         console.warn('No user session while setting role');
         return;
       }
-      await supabase
+      
+      console.log('RoleSelectionScreen: Updating profile with role:', role);
+      const { error } = await supabase
         .from('profiles')
         .upsert({ id: user.id, role, updated_at: new Date().toISOString() });
 
+      if (error) {
+        console.error('Error updating profile:', error);
+        return;
+      }
+
+      console.log('RoleSelectionScreen: Role set successfully, navigating...');
       if (role === 'parent') {
         navigation.navigate('LinkChild');
       } else {

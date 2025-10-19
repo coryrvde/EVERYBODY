@@ -38,7 +38,7 @@ export default function ParentScanScreen() {
       // Create family link (parent -> child)
       const { error } = await supabase
         .from('family_links')
-        .insert({ parent_user_id: user.id, child_user_id: parsed.childUserId });
+        .insert({ parent_id: user.id, child_id: parsed.childUserId });
       if (error) throw error;
 
       Alert.alert('Linked', 'Child device successfully linked');
