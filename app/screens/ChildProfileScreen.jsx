@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 export default function ChildProfileScreen() {
+  const navigation = useNavigation();
   const [profiles, setProfiles] = useState([
     { 
       id: 1, 
@@ -239,6 +241,9 @@ export default function ChildProfileScreen() {
           </View>
           <Text style={styles.headerTitle}>Child Profiles</Text>
           <Text style={styles.headerSubtitle}>Manage your children's accounts</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('ParentScan')} style={styles.scanButton}>
+            <Text style={styles.scanButtonText}>📷 Scan Child QR</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.profileList}>
@@ -377,6 +382,18 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 16,
     color: '#6B7280',
+  },
+  scanButton: {
+    marginTop: 12,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  scanButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   profileList: {
     marginBottom: 20,

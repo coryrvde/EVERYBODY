@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
@@ -48,7 +48,7 @@ export default function RoleSelectionScreen() {
             text: 'Continue',
             onPress: () => {
               if (role === 'parent') {
-                navigation.navigate('LinkChild');
+                navigation.navigate('Child Profiles');
               } else {
                 navigation.navigate('ChildQR');
               }
