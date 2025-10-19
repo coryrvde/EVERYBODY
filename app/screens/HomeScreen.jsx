@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
-import { guardianAPI } from '../../backend/api/guardian-api';
+import { guardianClient } from '../api/guardian-client';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -59,7 +59,7 @@ export default function HomeScreen() {
 
   async function loadAlerts(guardian_id) {
     try {
-      const alertsData = await guardianAPI.alerts.getRecentAlerts(guardian_id);
+      const alertsData = await guardianClient.recentAlerts.getRecentAlerts(guardian_id);
       setAlerts(alertsData);
     } catch (error) {
       console.error('Error loading alerts:', error);
@@ -151,7 +151,7 @@ export default function HomeScreen() {
 
           <View style={styles.chartContainer}>
             <View style={styles.alertBadge}>
-              <Text style={styles.alertText}>{alertCount} Alerts</Text>
+              <Text style={styles.alertText}>{alerts.length} Alerts</Text>
             </View>
             
             <View style={styles.chart}>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { guardianAPI } from '../../backend/api/guardian-api';
+import { guardianClient } from '../api/guardian-client';
 
 export default function SummaryScreen() {
   const navigation = useNavigation();
@@ -24,7 +24,7 @@ export default function SummaryScreen() {
   async function loadSummary() {
     try {
       setLoading(true);
-      const data = await guardianAPI.summary.getSummary(child_id);
+      const data = await guardianClient.summary.getSummary(child_id);
       setSummaryData(data);
     } catch (error) {
       console.error('Error loading summary:', error);
