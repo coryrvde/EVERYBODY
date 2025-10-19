@@ -1,4 +1,5 @@
 import { supabase } from '../app/supabase'
+import { Expo, ExpoPushMessage, ExpoPushToken } from 'expo-server-sdk'
 
 // ============================================================================
 // GUARDIAN AI API FUNCTIONS
@@ -207,6 +208,14 @@ export const alertsAPI = {
           description: `Manual alert created: ${alertData.title}`,
           metadata: { alert_id: data.id, alert_type: alertData.alert_type }
         })
+
+      // Send push notification for the alert
+      try {
+        await notificationsAPI.sendAlertNotification(data.id)
+      } catch (notificationError) {
+        console.warn('Failed to send alert notification:', notificationError)
+        // Don't fail the alert creation if notification fails
+      }
 
       return data
     } catch (error) {
@@ -474,6 +483,15 @@ export const emergencyAPI = {
       })
 
       if (error) throw error
+
+      // Send emergency push notification
+      try {
+        await notificationsAPI.sendEmergencyNotification(user.id, emergencyData)
+      } catch (notificationError) {
+        console.warn('Failed to send emergency notification:', notificationError)
+        // Don't fail the emergency trigger if notification fails
+      }
+
       return data
     } catch (error) {
       console.error('Error triggering emergency response:', error)
@@ -661,6 +679,252 @@ export const realtimeAPI = {
 }
 
 // ===========================
+// PUSH NOTIFICATIONS FUNCTIONS
+// ===========================
+
+// Initialize Expo client
+const expo = new Expo()
+
+export const notificationsAPI = {
+  // Register device for push notifications
+  async registerDeviceToken(deviceToken) {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError) throw userError
+
+      // Validate Expo push token
+      if (!Expo.isExpoPushToken(deviceToken)) {
+        throw new Error('Invalid Expo push token')
+      }
+
+      // Update or insert device token
+      const { data, error } = await supabase
+        .from('devices')
+        .upsert({
+          user_id: user.id,
+          device_name: `Device-${deviceToken.slice(-8)}`,
+          device_type: 'mobile',
+          fcm_token: deviceToken,
+          is_active: true,
+          last_seen: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error registering device token:', error)
+      throw error
+    }
+  },
+
+  // Send push notification to specific user
+  async sendNotificationToUser(userId, notification) {
+    try {
+      // Get user's active device tokens
+      const { data: devices, error } = await supabase
+        .from('devices')
+        .select('fcm_token')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .not('fcm_token', 'is', null)
+
+      if (error) throw error
+      if (!devices || devices.length === 0) return { sent: 0, message: 'No active devices found' }
+
+      const messages = devices
+        .filter(device => Expo.isExpoPushToken(device.fcm_token))
+        .map(device => ({
+          to: device.fcm_token,
+          title: notification.title,
+          body: notification.body,
+          data: notification.data || {},
+          sound: notification.sound || 'default',
+          priority: notification.priority || 'default',
+          ttl: notification.ttl || 86400, // 24 hours
+          expiration: notification.expiration,
+          badge: notification.badge
+        }))
+
+      if (messages.length === 0) return { sent: 0, message: 'No valid push tokens found' }
+
+      // Send notifications in chunks (Expo recommends max 100 per request)
+      const chunks = expo.chunkPushNotifications(messages)
+      const tickets = []
+
+      for (const chunk of chunks) {
+        try {
+          const ticketChunk = await expo.sendPushNotificationsAsync(chunk)
+          tickets.push(...ticketChunk)
+        } catch (error) {
+          console.error('Error sending notification chunk:', error)
+        }
+      }
+
+      // Log the notification
+      await supabase
+        .from('activity_logs')
+        .insert({
+          user_id: userId,
+          activity_type: 'notification_sent',
+          description: `Push notification sent: ${notification.title}`,
+          metadata: {
+            notification_title: notification.title,
+            devices_targeted: devices.length,
+            messages_sent: messages.length,
+            tickets_received: tickets.length
+          }
+        })
+
+      return {
+        sent: tickets.length,
+        tickets: tickets,
+        message: `Notifications sent to ${tickets.length} devices`
+      }
+    } catch (error) {
+      console.error('Error sending notification to user:', error)
+      throw error
+    }
+  },
+
+  // Send security alert notification
+  async sendAlertNotification(alertId) {
+    try {
+      // Get alert details
+      const { data: alert, error: alertError } = await supabase
+        .from('security_alerts')
+        .select('*')
+        .eq('id', alertId)
+        .single()
+
+      if (alertError) throw alertError
+
+      const notification = {
+        title: '🚨 Security Alert',
+        body: alert.title,
+        data: {
+          type: 'alert',
+          alertId: alert.id,
+          severity: alert.severity
+        },
+        sound: 'default',
+        priority: alert.severity === 'critical' ? 'high' : 'default',
+        badge: 1
+      }
+
+      return await this.sendNotificationToUser(alert.user_id, notification)
+    } catch (error) {
+      console.error('Error sending alert notification:', error)
+      throw error
+    }
+  },
+
+  // Send AI insight notification
+  async sendInsightNotification(insightId) {
+    try {
+      // Get insight details
+      const { data: insight, error: insightError } = await supabase
+        .from('ai_insights')
+        .select('*')
+        .eq('id', insightId)
+        .single()
+
+      if (insightError) throw insightError
+
+      const notification = {
+        title: '🧠 AI Insight',
+        body: insight.title,
+        data: {
+          type: 'insight',
+          insightId: insight.id
+        },
+        sound: 'default',
+        priority: 'default'
+      }
+
+      return await this.sendNotificationToUser(insight.user_id, notification)
+    } catch (error) {
+      console.error('Error sending insight notification:', error)
+      throw error
+    }
+  },
+
+  // Send emergency notification
+  async sendEmergencyNotification(userId, emergencyData) {
+    try {
+      const notification = {
+        title: '🚨 EMERGENCY ALERT',
+        body: `Emergency: ${emergencyData.emergencyType}`,
+        data: {
+          type: 'emergency',
+          emergencyType: emergencyData.emergencyType,
+          severity: emergencyData.severity
+        },
+        sound: 'default',
+        priority: 'high',
+        badge: 1,
+        ttl: 0 // Never expire emergency notifications
+      }
+
+      return await this.sendNotificationToUser(userId, notification)
+    } catch (error) {
+      console.error('Error sending emergency notification:', error)
+      throw error
+    }
+  },
+
+  // Send broadcast notification to all users (admin function)
+  async sendBroadcastNotification(title, body, data = {}) {
+    try {
+      // Get all active device tokens
+      const { data: devices, error } = await supabase
+        .from('devices')
+        .select('fcm_token, user_id')
+        .eq('is_active', true)
+        .not('fcm_token', 'is', null)
+
+      if (error) throw error
+      if (!devices || devices.length === 0) return { sent: 0, message: 'No active devices found' }
+
+      const messages = devices
+        .filter(device => Expo.isExpoPushToken(device.fcm_token))
+        .map(device => ({
+          to: device.fcm_token,
+          title: title,
+          body: body,
+          data: { ...data, broadcast: true },
+          sound: 'default',
+          priority: 'default'
+        }))
+
+      if (messages.length === 0) return { sent: 0, message: 'No valid push tokens found' }
+
+      const chunks = expo.chunkPushNotifications(messages)
+      const tickets = []
+
+      for (const chunk of chunks) {
+        try {
+          const ticketChunk = await expo.sendPushNotificationsAsync(chunk)
+          tickets.push(...ticketChunk)
+        } catch (error) {
+          console.error('Error sending broadcast notification chunk:', error)
+        }
+      }
+
+      return {
+        sent: tickets.length,
+        totalDevices: devices.length,
+        message: `Broadcast sent to ${tickets.length} devices`
+      }
+    } catch (error) {
+      console.error('Error sending broadcast notification:', error)
+      throw error
+    }
+  }
+}
+
+// ===========================
 // UTILITY FUNCTIONS
 // ===========================
 
@@ -705,6 +969,7 @@ export const guardianAPI = {
   activity: activityAPI,
   settings: settingsAPI,
   realtime: realtimeAPI,
+  notifications: notificationsAPI,
   utils
 }
 
