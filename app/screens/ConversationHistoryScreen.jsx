@@ -203,30 +203,6 @@ export default function ConversationHistoryScreen() {
       flaggedWords: ['inappropriate content', 'explicit material'],
       messageCount: 20,
       date: '2 days ago'
-    },
-    {
-      id: 7,
-      app: 'Telegram',
-      contact: 'Group Chat',
-      timestamp: '3 days ago',
-      severity: 'medium',
-      flaggedContent: 'Suspicious link shared',
-      preview: 'Check out this cool site...',
-      flaggedWords: ['suspicious link', 'external site'],
-      messageCount: 8,
-      date: '3 days ago'
-    },
-    {
-      id: 8,
-      app: 'WhatsApp',
-      contact: 'Unknown Contact',
-      timestamp: '4 days ago',
-      severity: 'medium',
-      flaggedContent: 'Drug slang detected',
-      preview: 'Want to smoke some greens tonight? I got some bud...',
-      flaggedWords: ['greens', 'smoke', 'bud', 'marijuana smoking context'],
-      messageCount: 6,
-      date: '4 days ago'
     }
   ];
 
