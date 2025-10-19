@@ -17,6 +17,9 @@ import HomeScreen from './app/screens/HomeScreen';
 import ChildProfile from './app/screens/ChildProfile';
 import ParentalControlScreen from './app/screens/ParentalControlScreen';
 import ConversationHistoryScreen from './app/screens/ConversationHistoryScreen';
+import SettingsScreen from './app/screens/Setting';
+import AppAppearanceScreen from './app/screens/AppAppearanceScreen';
+
 
 
 
@@ -49,7 +52,7 @@ function MyTabs() {
         ),
       }}
       />
-      <Tab.Screen name="Settings" component={HomeScreen}
+      <Tab.Screen name="Settings" component={SettingsScreen}
       options={{
         tabBarIcon: ({ color, size }) => (
           <SimpleLineIcons name="settings" size={size} color={color} />
@@ -58,6 +61,7 @@ function MyTabs() {
       />
     </Tab.Navigator>
   );
+
 }
 
 function RootStack(){
@@ -69,6 +73,7 @@ function RootStack(){
     <Stack.Screen name="SignUp" component={SignUpScreen}/>
     <Stack.Screen name="Details" component={Details}/>
     <Stack.Screen name="Child Profiles" component={ChildProfile}/>
+    <Stack.Screen name="App Appearance" component={AppAppearanceScreen}/>
   </Stack.Navigator>
   );
 }
