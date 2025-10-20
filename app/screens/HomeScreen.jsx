@@ -504,16 +504,27 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
 
-            <TouchableOpacity 
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('AI Monitoring')}
-            >
-              <View style={styles.actionIcon}>
-                <Text style={{ fontSize: 28 }}>🧠</Text>
-              </View>
-              <Text style={styles.actionTitle}>AI Monitoring</Text>
-              <Text style={styles.actionSubtitle}>Smart detection</Text>
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => navigation.navigate('AI Monitoring')}
+              >
+                <View style={styles.actionIcon}>
+                  <Text style={{ fontSize: 28 }}>🧠</Text>
+                </View>
+                <Text style={styles.actionTitle}>AI Monitoring</Text>
+                <Text style={styles.actionSubtitle}>Smart detection</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => navigation.navigate('Telegram Setup')}
+              >
+                <View style={styles.actionIcon}>
+                  <Text style={{ fontSize: 28 }}>📱</Text>
+                </View>
+                <Text style={styles.actionTitle}>Telegram Setup</Text>
+                <Text style={styles.actionSubtitle}>Real-time monitoring</Text>
+              </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.actionCard}

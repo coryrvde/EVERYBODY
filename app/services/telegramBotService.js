@@ -1,252 +1,513 @@
 import { supabase } from '../supabase';
+import { smartAIAnalyzer } from './smartAIAnalyzer';
+import { notificationService } from './notificationService';
 
 class TelegramBotService {
   constructor() {
-    this.botToken = process.env.EXPO_PUBLIC_TELEGRAM_BOT_TOKEN;
-    this.webhookUrl = process.env.EXPO_PUBLIC_WEBHOOK_URL;
-    this.isInitialized = false;
+    this.botToken = null;
+    this.webhookUrl = null;
+    this.isMonitoring = false;
+    this.monitoredChats = new Map();
+    this.parentId = null;
+    this.childId = null;
+    this.baseUrl = 'https://api.telegram.org/bot';
   }
 
   /**
-   * Initialize Telegram Bot API
+   * Initialize Telegram Bot for monitoring
    */
-  async initialize() {
+  async initializeBot(parentId, childId, botToken) {
     try {
-      if (!this.botToken) {
-        console.error('❌ Telegram Bot Token not found');
-        return false;
-      }
-
-      console.log('🤖 Initializing Telegram Bot Service...');
+      console.log('🤖 Initializing Telegram Bot for monitoring...');
       
-      // Set up webhook for real-time updates
+      this.parentId = parentId;
+      this.childId = childId;
+      this.botToken = botToken;
+      
+      // Set up webhook for real-time message monitoring
       await this.setupWebhook();
       
-      this.isInitialized = true;
-      console.log('✅ Telegram Bot Service initialized successfully');
+      // Get bot info
+      const botInfo = await this.getBotInfo();
+      console.log('✅ Bot initialized:', botInfo);
       
+      // Store bot configuration
+      await this.storeBotConfig(botToken);
+      
+      this.isMonitoring = true;
       return true;
+      
     } catch (error) {
-      console.error('❌ Error initializing Telegram Bot Service:', error);
+      console.error('❌ Error initializing Telegram Bot:', error);
       return false;
     }
   }
 
   /**
-   * Set up webhook for receiving updates
+   * Set up webhook for real-time message monitoring
    */
   async setupWebhook() {
     try {
-      const webhookUrl = `${this.webhookUrl}/telegram-webhook`;
+      // For development, we'll use polling instead of webhook
+      // In production, you would set up a webhook URL
+      console.log('🔗 Setting up Telegram Bot webhook...');
       
-      const response = await fetch(`https://api.telegram.org/bot${this.botToken}/setWebhook`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: webhookUrl,
-          allowed_updates: ['message', 'edited_message']
-        })
-      });
-
-      const result = await response.json();
+      // Start polling for updates
+      this.startPolling();
       
-      if (result.ok) {
-        console.log('✅ Telegram webhook set up successfully');
-      } else {
-        console.error('❌ Failed to set up webhook:', result.description);
-      }
     } catch (error) {
       console.error('❌ Error setting up webhook:', error);
     }
   }
 
   /**
-   * Process incoming Telegram message
+   * Start polling for new messages
    */
-  async processMessage(message) {
+  startPolling() {
+    if (this.isMonitoring) return;
+    
+    console.log('👁️ Starting Telegram Bot message polling...');
+    this.isMonitoring = true;
+    
+    // Poll for updates every 2 seconds
+    this.pollInterval = setInterval(async () => {
+      await this.getUpdates();
+    }, 2000);
+  }
+
+  /**
+   * Stop polling
+   */
+  stopPolling() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+      this.isMonitoring = false;
+      console.log('🛑 Stopped Telegram Bot polling');
+    }
+  }
+
+  /**
+   * Get updates from Telegram Bot
+   */
+  async getUpdates() {
     try {
-      console.log('📱 Processing Telegram message:', message);
-
-      // Extract message data
-      const messageData = {
-        child_id: message.from.id.toString(),
-        contact: message.chat.title || `${message.from.first_name} ${message.from.last_name || ''}`.trim(),
-        content: message.text || '[Media Message]',
-        timestamp: new Date(message.date * 1000).toISOString(),
-        app_name: 'Telegram',
-        message_type: message.text ? 'text' : 'media',
-        chat_id: message.chat.id,
-        message_id: message.message_id
-      };
-
-      // Analyze content for inappropriate material
-      const analysis = await this.analyzeContent(messageData.content);
+      if (!this.botToken) return;
       
-      if (analysis.isFlagged) {
-        // Store flagged message in database
-        await this.storeFlaggedMessage({
-          ...messageData,
-          severity: analysis.severity,
-          flagged_content: analysis.flaggedContent,
-          confidence: analysis.confidence,
-          flagged_words: analysis.flaggedWords
-        });
-
-        // Send real-time alert to parent
-        await this.sendAlertToParent(messageData, analysis);
+      const response = await fetch(`${this.baseUrl}${this.botToken}/getUpdates`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.ok && data.result.length > 0) {
+        for (const update of data.result) {
+          await this.handleUpdate(update);
+        }
       }
-
-      // Store all messages for conversation history
-      await this.storeConversationLog(messageData);
-
+      
     } catch (error) {
-      console.error('❌ Error processing Telegram message:', error);
+      console.error('❌ Error getting updates:', error);
     }
   }
 
   /**
-   * Analyze message content for inappropriate material
+   * Handle incoming updates
    */
-  async analyzeContent(content) {
+  async handleUpdate(update) {
     try {
-      // Basic content analysis (you can enhance this with AI)
-      const inappropriateWords = [
-        'drugs', 'weed', 'marijuana', 'alcohol', 'drunk',
-        'sex', 'sexual', 'nude', 'naked', 'porn',
-        'kill', 'suicide', 'hurt', 'violence', 'weapon',
-        'ugly', 'fat', 'stupid', 'loser', 'hate',
-        'address', 'phone', 'password', 'meet me at'
-      ];
-
-      const lowerContent = content.toLowerCase();
-      const foundWords = inappropriateWords.filter(word => 
-        lowerContent.includes(word.toLowerCase())
-      );
-
-      if (foundWords.length > 0) {
-        return {
-          isFlagged: true,
-          severity: foundWords.length > 2 ? 'high' : 'medium',
-          flaggedContent: `Inappropriate content detected: ${foundWords.join(', ')}`,
-          confidence: Math.min(0.5 + (foundWords.length * 0.1), 0.9),
-          flaggedWords: foundWords
-        };
+      if (update.message) {
+        await this.handleMessage(update.message);
+      } else if (update.channel_post) {
+        await this.handleChannelPost(update.channel_post);
       }
+    } catch (error) {
+      console.error('❌ Error handling update:', error);
+    }
+  }
 
-      return {
-        isFlagged: false,
-        severity: 'low',
-        flaggedContent: null,
-        confidence: 0.1,
-        flaggedWords: []
+  /**
+   * Handle incoming messages
+   */
+  async handleMessage(message) {
+    try {
+      console.log('📨 New Telegram message received:', {
+        chatId: message.chat.id,
+        messageId: message.message_id,
+        text: message.text,
+        from: message.from
+      });
+      
+      // Store message in database
+      const messageData = await this.storeMessage(message);
+      
+      // Analyze message with AI if it has text content
+      if (message.text && message.text.length > 0) {
+        await this.analyzeMessage(messageData);
+      }
+      
+      // Add chat to monitored chats if not already there
+      await this.addMonitoredChat(message.chat);
+      
+    } catch (error) {
+      console.error('❌ Error handling message:', error);
+    }
+  }
+
+  /**
+   * Handle channel posts
+   */
+  async handleChannelPost(channelPost) {
+    try {
+      console.log('📢 New Telegram channel post received:', {
+        chatId: channelPost.chat.id,
+        messageId: channelPost.message_id,
+        text: channelPost.text
+      });
+      
+      // Store channel post in database
+      const messageData = await this.storeChannelPost(channelPost);
+      
+      // Analyze content with AI
+      if (channelPost.text && channelPost.text.length > 0) {
+        await this.analyzeMessage(messageData);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error handling channel post:', error);
+    }
+  }
+
+  /**
+   * Store message in database
+   */
+  async storeMessage(message) {
+    try {
+      const messageData = {
+        child_id: this.childId,
+        parent_id: this.parentId,
+        chat_id: message.chat.id.toString(),
+        message_id: message.message_id.toString(),
+        message_text: message.text || '',
+        message_type: 'text',
+        sender_name: `${message.from.first_name} ${message.from.last_name || ''}`.trim(),
+        sender_id: message.from.id.toString(),
+        chat_type: message.chat.type,
+        chat_title: message.chat.title || message.chat.first_name,
+        flagged: false,
+        timestamp: new Date(message.date * 1000).toISOString(),
+        created_at: new Date().toISOString()
       };
-
-    } catch (error) {
-      console.error('❌ Error analyzing content:', error);
-      return {
-        isFlagged: false,
-        severity: 'low',
-        flaggedContent: null,
-        confidence: 0.1,
-        flaggedWords: []
-      };
-    }
-  }
-
-  /**
-   * Store flagged message in database
-   */
-  async storeFlaggedMessage(messageData) {
-    try {
-      const { error } = await supabase
-        .from('flagged_content')
-        .insert({
-          child_id: messageData.child_id,
-          app_name: messageData.app_name,
-          contact: messageData.contact,
-          content_type: messageData.message_type,
-          content_data: messageData.content,
-          severity: messageData.severity,
-          flagged_phrases: messageData.flagged_words,
-          confidence: messageData.confidence,
-          analysis_reasons: [messageData.flagged_content]
-        });
-
-      if (error) {
-        console.error('❌ Error storing flagged message:', error);
-      } else {
-        console.log('✅ Flagged message stored successfully');
-      }
-    } catch (error) {
-      console.error('❌ Error storing flagged message:', error);
-    }
-  }
-
-  /**
-   * Store conversation log
-   */
-  async storeConversationLog(messageData) {
-    try {
-      const { error } = await supabase
-        .from('conversation_logs')
-        .insert({
-          child_id: messageData.child_id,
-          app_name: messageData.app_name,
-          contact: messageData.contact,
-          severity: messageData.severity || 'low',
-          flagged_content: messageData.flagged_content || null,
-          confidence: messageData.confidence || 0.1,
-          message_count: 1
-        });
-
-      if (error) {
-        console.error('❌ Error storing conversation log:', error);
-      }
-    } catch (error) {
-      console.error('❌ Error storing conversation log:', error);
-    }
-  }
-
-  /**
-   * Send alert to parent
-   */
-  async sendAlertToParent(messageData, analysis) {
-    try {
-      // Get parent ID from child ID
-      const { data: familyLink, error: linkError } = await supabase
-        .from('family_links')
-        .select('parent_id')
-        .eq('child_id', messageData.child_id)
+      
+      const { data, error } = await supabase
+        .from('telegram_messages')
+        .upsert(messageData, { 
+          onConflict: 'child_id,chat_id,message_id' 
+        })
+        .select()
         .single();
+      
+      if (error) throw error;
+      
+      return data;
+      
+    } catch (error) {
+      console.error('❌ Error storing message:', error);
+      return null;
+    }
+  }
 
-      if (linkError || !familyLink) {
-        console.error('❌ No parent found for child:', messageData.child_id);
+  /**
+   * Store channel post in database
+   */
+  async storeChannelPost(channelPost) {
+    try {
+      const messageData = {
+        child_id: this.childId,
+        parent_id: this.parentId,
+        chat_id: channelPost.chat.id.toString(),
+        message_id: channelPost.message_id.toString(),
+        message_text: channelPost.text || '',
+        message_type: 'text',
+        sender_name: 'Channel',
+        sender_id: channelPost.chat.id.toString(),
+        chat_type: 'channel',
+        chat_title: channelPost.chat.title,
+        flagged: false,
+        timestamp: new Date(channelPost.date * 1000).toISOString(),
+        created_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase
+        .from('telegram_messages')
+        .upsert(messageData, { 
+          onConflict: 'child_id,chat_id,message_id' 
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      return data;
+      
+    } catch (error) {
+      console.error('❌ Error storing channel post:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Analyze message with AI
+   */
+  async analyzeMessage(messageData) {
+    try {
+      console.log('🧠 Analyzing Telegram message with AI...');
+      
+      // Get parent's custom filters
+      const customFilters = await this.getCustomFilters();
+      
+      // Analyze with AI
+      const analysis = await smartAIAnalyzer.analyzeWithCustomFilters(
+        messageData.message_text,
+        this.parentId,
+        customFilters
+      );
+      
+      console.log('🤖 AI Analysis result:', analysis);
+      
+      // If flagged, create alert
+      if (analysis.flagged && analysis.confidence > 0.7) {
+        await this.createAlert(messageData, analysis);
+      }
+      
+      // Update message with analysis
+      await this.updateMessageAnalysis(messageData.id, analysis);
+      
+    } catch (error) {
+      console.error('❌ Error analyzing message:', error);
+    }
+  }
+
+  /**
+   * Create alert for flagged content
+   */
+  async createAlert(messageData, analysis) {
+    try {
+      console.log('🚨 Creating alert for flagged Telegram content');
+      
+      // Create real-time alert
+      const alertData = {
+        parent_id: this.parentId,
+        child_id: this.childId,
+        alert_type: 'ai_flagged_content',
+        severity: analysis.severity,
+        flagged_content: messageData.message_text,
+        app_name: 'Telegram',
+        contact: messageData.sender_name || 'Unknown',
+        confidence: analysis.confidence,
+        ai_reasoning: analysis.reasoning,
+        is_acknowledged: false
+      };
+      
+      const { data: alert, error } = await supabase
+        .from('real_time_alerts')
+        .insert(alertData)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Create recent alert for home page
+      const recentAlertData = {
+        guardian_id: this.parentId,
+        child_id: this.childId,
+        alert_type: 'ai_flagged_content',
+        severity: analysis.severity,
+        title: 'AI Flagged Content - Telegram',
+        message: `Inappropriate content detected in Telegram message from ${messageData.sender_name}`,
+        app_name: 'Telegram',
+        flagged_content: messageData.message_text,
+        confidence: analysis.confidence,
+        ai_reasoning: analysis.reasoning,
+        is_acknowledged: false
+      };
+      
+      const { data: recentAlert, error: recentError } = await supabase
+        .from('recent_alerts')
+        .insert(recentAlertData)
+        .select()
+        .single();
+      
+      if (recentError) {
+        console.error('Error creating recent alert:', recentError);
+      }
+      
+      // Send notification to parent via Telegram Bot
+      await this.sendParentNotification(alert);
+      
+      console.log('✅ Alert created successfully');
+      
+    } catch (error) {
+      console.error('❌ Error creating alert:', error);
+    }
+  }
+
+  /**
+   * Send notification to parent via Telegram Bot
+   */
+  async sendParentNotification(alert) {
+    try {
+      // Get parent's Telegram chat ID from database
+      const { data: parentChat, error } = await supabase
+        .from('parent_telegram_chats')
+        .select('chat_id')
+        .eq('parent_id', this.parentId)
+        .single();
+      
+      if (error || !parentChat) {
+        console.log('Parent Telegram chat ID not found, skipping notification');
         return;
       }
-
-      // Create real-time alert
-      const { error: alertError } = await supabase
-        .from('real_time_alerts')
-        .insert({
-          child_id: messageData.child_id,
-          alert_type: 'content_flag',
-          severity: analysis.severity,
-          app_name: messageData.app_name,
-          contact: messageData.contact,
-          flagged_content: messageData.content,
-          confidence: analysis.confidence,
-          ai_reasoning: analysis.flaggedContent
-        });
-
-      if (alertError) {
-        console.error('❌ Error creating alert:', alertError);
-      } else {
-        console.log('✅ Alert sent to parent');
-      }
+      
+      const message = `🚨 *ALERT: Flagged Content Detected*\n\n` +
+        `📱 *App:* ${alert.app_name}\n` +
+        `👤 *Contact:* ${alert.contact}\n` +
+        `⚠️ *Severity:* ${alert.severity.toUpperCase()}\n` +
+        `🎯 *Confidence:* ${Math.round(alert.confidence * 100)}%\n\n` +
+        `📝 *Content:* ${alert.flagged_content}\n\n` +
+        `🤖 *AI Analysis:* ${alert.ai_reasoning}\n\n` +
+        `⏰ *Time:* ${new Date(alert.created_at).toLocaleString()}`;
+      
+      await this.sendMessage(parentChat.chat_id, message, 'Markdown');
+      
     } catch (error) {
-      console.error('❌ Error sending alert to parent:', error);
+      console.error('❌ Error sending parent notification:', error);
+    }
+  }
+
+  /**
+   * Send message via Telegram Bot
+   */
+  async sendMessage(chatId, text, parseMode = 'HTML') {
+    try {
+      const response = await fetch(`${this.baseUrl}${this.botToken}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: text,
+          parse_mode: parseMode
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        throw new Error(data.description);
+      }
+      
+      return data.result;
+      
+    } catch (error) {
+      console.error('❌ Error sending message:', error);
+    }
+  }
+
+  /**
+   * Get custom filters for parent
+   */
+  async getCustomFilters() {
+    try {
+      const { data, error } = await supabase
+        .from('custom_filters')
+        .select('*')
+        .eq('parent_id', this.parentId)
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error getting custom filters:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Update message with analysis results
+   */
+  async updateMessageAnalysis(messageId, analysis) {
+    try {
+      const { error } = await supabase
+        .from('telegram_messages')
+        .update({
+          flagged: analysis.flagged,
+          severity: analysis.severity,
+          confidence: analysis.confidence,
+          flagged_phrases: analysis.keywords_detected || [],
+          flagged_categories: [analysis.category].filter(Boolean),
+          analysis_result: {
+            reasoning: analysis.reasoning,
+            suggested_action: analysis.suggested_action,
+            confidence: analysis.confidence
+          }
+        })
+        .eq('id', messageId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('❌ Error updating message analysis:', error);
+    }
+  }
+
+  /**
+   * Add monitored chat
+   */
+  async addMonitoredChat(chat) {
+    try {
+      const chatData = {
+        child_id: this.childId,
+        parent_id: this.parentId,
+        chat_id: chat.id.toString(),
+        title: chat.title || chat.first_name || 'Unknown Chat',
+        type: chat.type,
+        is_monitored: true,
+        updated_at: new Date().toISOString()
+      };
+      
+      const { error } = await supabase
+        .from('telegram_chats')
+        .upsert(chatData, { onConflict: 'child_id,chat_id' });
+      
+      if (error) throw error;
+      
+    } catch (error) {
+      console.error('❌ Error adding monitored chat:', error);
+    }
+  }
+
+  /**
+   * Store bot configuration
+   */
+  async storeBotConfig(botToken) {
+    try {
+      const { error } = await supabase
+        .from('telegram_bot_configs')
+        .upsert({
+          parent_id: this.parentId,
+          child_id: this.childId,
+          bot_token: botToken,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'parent_id,child_id' });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('❌ Error storing bot config:', error);
     }
   }
 
@@ -255,15 +516,14 @@ class TelegramBotService {
    */
   async getBotInfo() {
     try {
-      const response = await fetch(`https://api.telegram.org/bot${this.botToken}/getMe`);
+      const response = await fetch(`${this.baseUrl}${this.botToken}/getMe`);
       const data = await response.json();
       
-      if (data.ok) {
-        return data.result;
-      } else {
-        console.error('❌ Failed to get bot info:', data.description);
-        return null;
+      if (!data.ok) {
+        throw new Error(data.description);
       }
+      
+      return data.result;
     } catch (error) {
       console.error('❌ Error getting bot info:', error);
       return null;
@@ -271,48 +531,59 @@ class TelegramBotService {
   }
 
   /**
-   * Generate bot invite link
+   * Get monitored chats
    */
-  generateBotInviteLink() {
-    if (!this.botToken) return null;
-    
-    const botUsername = this.botToken.split(':')[0]; // Extract bot username from token
-    return `https://t.me/${botUsername}`;
+  async getMonitoredChats() {
+    try {
+      const { data, error } = await supabase
+        .from('telegram_chats')
+        .select('*')
+        .eq('child_id', this.childId)
+        .eq('is_monitored', true);
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error getting monitored chats:', error);
+      return [];
+    }
   }
 
   /**
-   * Send message to child
+   * Stop monitoring
    */
-  async sendMessageToChild(chatId, message) {
+  async stopMonitoring() {
     try {
-      const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: message,
-          parse_mode: 'HTML'
-        })
-      });
-
-      const result = await response.json();
+      this.stopPolling();
       
-      if (result.ok) {
-        console.log('✅ Message sent to child successfully');
-        return true;
-      } else {
-        console.error('❌ Failed to send message:', result.description);
-        return false;
-      }
+      // Update bot config as inactive
+      const { error } = await supabase
+        .from('telegram_bot_configs')
+        .update({ is_active: false })
+        .eq('parent_id', this.parentId)
+        .eq('child_id', this.childId);
+      
+      if (error) throw error;
+      
+      console.log('🛑 Telegram Bot monitoring stopped');
+      
     } catch (error) {
-      console.error('❌ Error sending message to child:', error);
-      return false;
+      console.error('❌ Error stopping monitoring:', error);
     }
+  }
+
+  /**
+   * Get monitoring status
+   */
+  getStatus() {
+    return {
+      isMonitoring: this.isMonitoring,
+      botToken: this.botToken ? '***' + this.botToken.slice(-4) : null,
+      monitoredChats: this.monitoredChats.size,
+      parentId: this.parentId,
+      childId: this.childId
+    };
   }
 }
 
-// Export singleton instance
 export const telegramBotService = new TelegramBotService();
-export default telegramBotService;

@@ -30,6 +30,7 @@ import ChildQRScreen from './app/screens/ChildQRScreen';
 import ParentScanScreen from './app/screens/ParentScanScreen';
 import ChildDashboardScreen from './app/screens/ChildDashboardScreen';
 import AIMonitoringScreen from './app/screens/AIMonitoringScreen';
+import TelegramSetupScreen from './app/screens/TelegramSetupScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -91,6 +92,7 @@ function RootStack(){
     <Stack.Screen name="ParentScan" component={ParentScanScreen}/>
     <Stack.Screen name="ChildDashboard" component={ChildDashboardScreen}/>
     <Stack.Screen name="AI Monitoring" component={AIMonitoringScreen}/>
+    <Stack.Screen name="Telegram Setup" component={TelegramSetupScreen}/>
     {/* <Stack.Screen name="App Appearance" component={AppAppearanceScreen}/> */}
   </Stack.Navigator>
   );
