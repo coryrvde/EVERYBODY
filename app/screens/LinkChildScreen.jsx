@@ -108,7 +108,12 @@ export default function LinkChildScreen() {
         <Text style={styles.headerSubtitle}>Parent Control Center</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <FlatList
+        style={styles.scrollView}
+        data={[{ id: 'content' }]}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        renderItem={() => (
         <View style={styles.content}>
           
           {/* Link Child Section */}
@@ -234,7 +239,8 @@ export default function LinkChildScreen() {
             )}
           </View>
         </View>
-      </ScrollView>
+        )}
+      />
     </SafeAreaView>
   );
 }

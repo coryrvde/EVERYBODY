@@ -209,7 +209,12 @@ export default function AIMonitoringScreen() {
         <Text style={styles.headerSubtitle}>Smart Content Detection</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <FlatList
+        style={styles.scrollView}
+        data={[{ id: 'content' }]}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        renderItem={() => (
         <View style={styles.content}>
           
           {/* Add New Filter Section */}
@@ -405,7 +410,8 @@ export default function AIMonitoringScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
+        )}
+      />
     </SafeAreaView>
   );
 }

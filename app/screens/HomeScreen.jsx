@@ -5,6 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
 import { guardianClient } from '../api/guardian-client';
 import { simpleAlertService } from '../services/simpleAlertService';
+import { localStorageService } from '../services/localStorageService';
+import { dataSyncService } from '../services/dataSyncService';
 import { 
   Users, 
   Activity, 
@@ -43,7 +45,7 @@ export default function HomeScreen() {
 
   // Load guardian ID and alerts on component mount
   useEffect(() => {
-    initializeData();
+    initializeApp();
   }, []);
 
   // Set up real-time alerts subscription
@@ -63,6 +65,27 @@ export default function HomeScreen() {
       }
     };
   }, []);
+
+  async function initializeApp() {
+    try {
+      console.log('🚀 Initializing Guardian AI app...');
+      
+      // Initialize local storage service
+      await localStorageService.initialize();
+      
+      // Initialize data sync service
+      await dataSyncService.initialize();
+      
+      // Initialize app data
+      await initializeData();
+      
+      console.log('✅ App initialization completed');
+      
+    } catch (error) {
+      console.error('❌ Error initializing app:', error);
+      Alert.alert('Error', 'Failed to initialize app');
+    }
+  }
 
   async function initializeData() {
     try {
@@ -526,16 +549,27 @@ export default function HomeScreen() {
                 <Text style={styles.actionSubtitle}>Real-time monitoring</Text>
               </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.actionCard}
-              onPress={createTestAlert}
-            >
-              <View style={styles.actionIcon}>
-                <Bell size={28} color="#F59E0B" />
-              </View>
-              <Text style={styles.actionTitle}>Test Alert</Text>
-              <Text style={styles.actionSubtitle}>Create test alert</Text>
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={createTestAlert}
+              >
+                <View style={styles.actionIcon}>
+                  <Bell size={28} color="#F59E0B" />
+                </View>
+                <Text style={styles.actionTitle}>Test Alert</Text>
+                <Text style={styles.actionSubtitle}>Create test alert</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => navigation.navigate('Data Management')}
+              >
+                <View style={styles.actionIcon}>
+                  <Text style={{ fontSize: 28 }}>💾</Text>
+                </View>
+                <Text style={styles.actionTitle}>Data Management</Text>
+                <Text style={styles.actionSubtitle}>Manage stored data</Text>
+              </TouchableOpacity>
           </View>
         </View>
 
